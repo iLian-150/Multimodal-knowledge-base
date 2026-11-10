@@ -3,7 +3,7 @@ import Bubble from "@ant-design/x/es/bubble/index.js";
 import Conversations from "@ant-design/x/es/conversations/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
 import Welcome from "@ant-design/x/es/welcome/index.js";
-import { AppstoreAddOutlined, FormOutlined, PaperClipOutlined, UploadOutlined } from "@ant-design/icons";
+import { AppstoreAddOutlined, DeleteOutlined, FormOutlined, PaperClipOutlined, UploadOutlined } from "@ant-design/icons";
 import Button from "antd/es/button";
 import Dropdown from "antd/es/dropdown";
 import Input from "antd/es/input";
@@ -584,6 +584,7 @@ function App() {
               items={sortedConversations.map((item) => ({ key: item.id, label: item.title || "新对话", icon: <Icon name="conversation" className="conversation-mark" /> }))}
               onActiveChange={(key) => { setActiveId(key); setMobileNav(false); }}
               menu={(conversation) => ({
+                trigger: <DeleteOutlined className="ant-conversations-menu-icon conversation-delete-trigger" />,
                 items: [{
                   key: "delete",
                   label: "删除对话",
