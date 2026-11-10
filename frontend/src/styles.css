@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 12617)
-Total output lines: 583
-
 :root {
   font-family: "DM Sans", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #25231f;
@@ -206,6 +203,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .assistant-markdown a { color: #5554a6; text-decoration: underline; text-underline-offset: 2px; }
 .assistant-markdown hr { margin: 16px 0; border: 0; border-top: 1px solid #eeece8; }
 .message-error .message-text { color: #a94c48; }
+.answer-review-note { margin: 11px 0; padding: 8px 11px; border: 1px solid #efe4c8; border-radius: 10px; background: #fffbf3; color: #806b45; font-size: 13px; line-height: 1.6; }
 .cursor-blink { display: inline-block; width: 6px; height: 13px; margin-left: 2px; background: #7772b3; vertical-align: -2px; animation: blink 1s steps(2, start) infinite; }
 .upload-progress { width: min(100%, 420px); margin-top: 12px; padding: 10px 11px; border: 1px solid #eeece8; border-radius: 9px; background: #fcfbfa; }
 .composer-upload-progress { width: 100%; max-width: 560px; margin: 0 auto 7px; padding: 8px 11px; border: 1px solid #eeece8; border-radius: 11px; background: #fff; box-shadow: 0 3px 12px rgba(40,37,31,.045); animation: appear .2s ease both; }
@@ -232,7 +230,29 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .sources-block[open] .source-list { margin-top: 8px; }
 .source-card { display: flex; align-items: center; max-width: 100%; gap: 7px; min-height: 27px; padding: 3px 8px; border: 1px solid #eeece8; border-radius: 7px; background: #fff; }
 .source-number { display: grid; place-items: center; width: 15px; height: 15px; border-radius: 4px; background: #f0eff8; color: #6a66a7; font-size: 9.2px; }
-.source-name { max-width: 260px; overflow: hidden; color: #…617 tokens truncated…infinite; }
+.source-name { max-width: 260px; overflow: hidden; color: #69655e; font-size: 10.35px; text-overflow: ellipsis; white-space: nowrap; }
+.source-page { color: #a19d96; font-size: 9.2px; white-space: nowrap; }
+.thinking { display: flex; align-items: center; gap: 5px; padding-left: 41px; color: #99958e; font-size: 10.35px; }
+.thinking span { width: 4px; height: 4px; border-radius: 50%; background: #918dbc; animation: pulse 1s ease-in-out infinite; }
+.thinking span:nth-child(2) { animation-delay: .15s; }.thinking span:nth-child(3) { margin-right: 3px; animation-delay: .3s; }
+
+.composer-zone { position: relative; z-index: 2; flex: 0 0 auto; width: min(100% - 40px, 800px); margin: 0 auto; padding: 8px 0 13px; background: #fff; }
+.composer { width: 100%; padding: 11px 12px 9px; border: 1px solid #e9e7e3; border-radius: 15px; background: #fff; box-shadow: 0 5px 22px rgba(44, 41, 34, .055); transition: border .18s, box-shadow .18s; }
+.composer:focus-within { border-color: #d8d5eb; box-shadow: 0 5px 24px rgba(70, 66, 132, .085), 0 0 0 3px rgba(102, 99, 191, .04); }
+.composer textarea { display: block; width: 100%; min-height: 29px; max-height: 150px; resize: none; padding: 4px 3px 9px; border: 0; outline: 0; background: transparent; color: #393630; font-size: 12.65px; line-height: 1.65; }
+.composer textarea::placeholder { color: #aba79f; }
+.composer textarea:focus-visible { outline: 0; }
+.composer-tools, .composer-left { display: flex; align-items: center; }
+.composer-tools { justify-content: space-between; }
+.composer-left { min-width: 0; gap: 9px; }
+.attach-button { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid #eceae6; border-radius: 7px; background: #fff; color: #69659e; font-size: 19.55px; cursor: pointer; }
+.attach-button:hover { border-color: #d7d4e9; background: #f8f7fd; }
+.attach-button .iconfont-icon { width: 18px; height: 18px; }
+.send-button { display: grid; place-items: center; width: 29px; height: 29px; border: 0; border-radius: 9px; background: #5956a4; color: #fff; font-size: 21.85px; line-height: 1; cursor: pointer; transition: background .15s, transform .15s; }
+.send-button:hover:not(:disabled) { background: #48458e; transform: translateY(-1px); }
+.send-button:disabled { background: #e9e7f1; color: #aaa7bc; cursor: default; }
+.send-button .iconfont-icon { width: 17px; height: 17px; }
+.send-spinner { width: 12px; height: 12px; border: 1.5px solid rgba(255,255,255,.45); border-top-color: white; border-radius: 50%; animation: spin .8s linear infinite; }
 .inline-status { position: absolute; left: 50%; bottom: calc(100% + 5px); display: flex; align-items: center; gap: 6px; max-width: 90%; padding: 6px 10px; transform: translateX(-50%); border: 1px solid #eeece8; border-radius: 8px; background: #fff; box-shadow: 0 3px 12px rgba(40,37,31,.06); color: #838078; font-size: 10.35px; white-space: nowrap; animation: appear .2s ease both; }
 .inline-status.working > span { color: #7571b0; animation: spin 1.4s linear infinite; }
 .inline-status.error { border-color: #f3dedb; color: #a64e47; }
