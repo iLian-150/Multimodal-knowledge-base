@@ -3,7 +3,7 @@ import Bubble from "@ant-design/x/es/bubble/index.js";
 import Conversations from "@ant-design/x/es/conversations/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
 import Welcome from "@ant-design/x/es/welcome/index.js";
-import { AppstoreAddOutlined, DeleteOutlined, DownOutlined, FormOutlined, LeftOutlined, PaperClipOutlined, RightOutlined, UploadOutlined } from "@ant-design/icons";
+import { AppstoreAddOutlined, DeleteOutlined, DownOutlined, FormOutlined, LeftOutlined, MenuOutlined, PaperClipOutlined, RightOutlined, UploadOutlined } from "@ant-design/icons";
 import Button from "antd/es/button";
 import Dropdown from "antd/es/dropdown";
 import Input from "antd/es/input";
@@ -556,9 +556,9 @@ function App() {
   return (
     <div className={`app-shell ${sidebarCollapsed && !mobileNav ? "sidebar-collapsed" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }} onDrop={(event) => { event.preventDefault(); setDragging(false); uploadFiles(event.dataTransfer.files); }}>
       {mobileNav && <button className="mobile-scrim" aria-label="关闭侧栏" onClick={() => setMobileNav(false)} />}
-      <aside className={`sidebar ${mobileNav ? "sidebar-open" : ""}`}>
+      <aside className={`sidebar ${mobileNav ? "sidebar-open" : ""}`} aria-label="主导航">
         <div className="sidebar-header">
-          <div className="brand" aria-label="库解">
+          <div className="brand">
             <span className="brand-symbol"><i /><i /><i /></span>
             <span className="brand-name">库解</span>
           </div>
@@ -640,7 +640,7 @@ function App() {
 
       <main className="main-panel">
         <header className="topbar">
-          <button className="mobile-menu" aria-label="打开侧栏" onClick={() => setMobileNav(true)}>☰</button>
+          <Button className="mobile-menu" type="text" aria-label="打开侧栏" icon={<MenuOutlined />} onClick={() => setMobileNav(true)} />
         </header>
 
         <input ref={fileInput} type="file" className="visually-hidden" multiple accept={ACCEPTED_FILES} onChange={(event) => uploadFiles(event.target.files)} />
