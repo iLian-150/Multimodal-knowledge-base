@@ -226,8 +226,11 @@ function App() {
   }, [refreshStatus]);
 
   useEffect(() => {
-    scrollArea.current?.scrollTo({ top: "bottom", behavior: "smooth" });
-  }, [messages, status.text]);
+    const frame = window.requestAnimationFrame(() => {
+      scrollArea.current?.scrollTo({ top: "bottom", behavior: "smooth" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeId]);
 
   const isDeletingDocument = ["queued", "running"].includes(documentDelete?.status);
 
@@ -397,6 +400,10 @@ function App() {
     if (!activeId) {
       setActiveId(conversationId);
       setConversations((items) => [{ id: conversationId, title: "新对话", messages: [], updatedAt: Date.now(), workspaceId: activeWorkspaceId }, ...items]);
+    } else {
+      window.requestAnimationFrame(() => {
+        scrollArea.current?.scrollTo({ top: "bottom", behavior: "smooth" });
+      });
     }
     const answerId = makeId();
     updateMessages(conversationId, (items) => [
