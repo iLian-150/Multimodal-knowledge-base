@@ -172,7 +172,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .composer-zone { position: relative; z-index: 2; flex: 0 0 auto; margin: 0 auto; padding: 8px 0 13px; background: #fff; }
 .attach-button { display: grid; place-items: center; border: 1px solid #eceae6; border-radius: 7px; background: #fff; color: #69659e; font-size: 19.55px; cursor: pointer; }
 .attach-button:hover { border-color: #d7d4e9; background: #f8f7fd; }
-.attach-button .iconfont-icon { width: 18px; height: 18px; }
 .send-button { display: grid; place-items: center; border: 0; border-radius: 9px; background: #5956a4; color: #fff; font-size: 21.85px; line-height: 1; cursor: pointer; transition: background .15s, transform .15s; }
 .send-button:hover:not(:disabled) { background: #48458e; transform: translateY(-1px); }
 .send-button:disabled { background: #e9e7f1; color: #aaa7bc; cursor: default; }
@@ -287,7 +286,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 }
 .new-chat:hover { border-color: #d6d3e9; box-shadow: 0 6px 16px rgba(72, 68, 132, .1); }
 .new-chat-icon { display: grid; place-items: center; width: 29px; height: 29px; border-radius: 10px; background: #f1f0fa; color: #625ea8; font-size: 21px; }
-.new-chat-icon .iconfont-icon { width: 16px; height: 16px; }
 .history-label { margin: 29px 5px 9px; color: #77747f; font-size: 13px; letter-spacing: .015em; }
 .history-label button { width: 30px; height: 30px; border: 1px solid transparent; border-radius: 10px; color: #6965a9; font-size: 21px; transition: background .16s, border-color .16s; }
 .history-label button:hover { border-color: #e7e5f1; background: #fff; }

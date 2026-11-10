@@ -4,7 +4,7 @@ import Conversations from "@ant-design/x/es/conversations/index.js";
 import Prompts from "@ant-design/x/es/prompts/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
 import Welcome from "@ant-design/x/es/welcome/index.js";
-import { EditOutlined, FileTextOutlined, PictureOutlined, SearchOutlined } from "@ant-design/icons";
+import { AppstoreAddOutlined, EditOutlined, FileTextOutlined, FormOutlined, PaperClipOutlined, PictureOutlined, SearchOutlined, UploadOutlined } from "@ant-design/icons";
 import Button from "antd/es/button";
 import Dropdown from "antd/es/dropdown";
 import Input from "antd/es/input";
@@ -579,11 +579,11 @@ function App() {
           >{sidebarCollapsed ? "›" : "‹"}</button>
         </div>
 
-        <Button className="new-chat" onClick={createConversation} disabled={busy} title="新建对话" icon={<span className="new-chat-icon"><Icon name="plus" /></span>}>
+        <Button className="new-chat" onClick={createConversation} disabled={busy} title="新建对话" icon={<span className="new-chat-icon"><FormOutlined /></span>}>
           <span className="new-chat-label">新建对话</span>
         </Button>
 
-        <div className="history-label"><span>最近对话</span><Button type="text" title="新建对话" onClick={createConversation} disabled={busy}><Icon name="plus" /></Button></div>
+        <div className="history-label"><span>最近对话</span><Button type="text" title="新建对话" onClick={createConversation} disabled={busy}><FormOutlined /></Button></div>
         <nav className="conversation-list" aria-label="最近对话">
           {sortedConversations.length ? (
             <Conversations
@@ -620,7 +620,7 @@ function App() {
                 { type: "divider" },
                 { key: "workspace-permission", disabled: true, label: <small className="workspace-permission-note">资料与检索按工作区域隔离；账号授权后续接入。</small> },
                 { type: "divider" },
-                { key: "create-workspace", label: "新建工作区域", icon: <Icon name="plus" /> },
+                { key: "create-workspace", label: "新建工作区域", icon: <AppstoreAddOutlined /> },
               ],
               onClick: ({ key }) => {
                 if (key === "create-workspace") {
@@ -648,7 +648,7 @@ function App() {
         </header>
 
         <input ref={fileInput} type="file" className="visually-hidden" multiple accept={ACCEPTED_FILES} onChange={(event) => uploadFiles(event.target.files)} />
-        {dragging && <div className="drop-overlay"><div><span>＋</span><strong>松开即可添加资料</strong><small>PDF、Word、PPT、图片与文本</small></div></div>}
+        {dragging && <div className="drop-overlay"><div><UploadOutlined /><strong>松开即可添加资料</strong><small>PDF、Word、PPT、图片与文本</small></div></div>}
 
         <section className={`conversation-stage ${visibleMessages.length ? "has-messages" : ""}`}>
           {visibleMessages.length === 0 ? (
@@ -706,7 +706,7 @@ function App() {
             submitType="enter"
             autoSize={{ minRows: 1, maxRows: 6 }}
             disabled={busy}
-            prefix={<Button type="text" className="attach-button" title="添加资料" aria-label="添加资料" onClick={() => fileInput.current?.click()} disabled={busy}><Icon name="plus" /></Button>}
+            prefix={<Button type="text" className="attach-button" title="添加资料" aria-label="添加资料" onClick={() => fileInput.current?.click()} disabled={busy}><PaperClipOutlined /></Button>}
             suffix={<Button className="send-button" type="primary" shape="circle" aria-label="发送问题" disabled={!question.trim() || busy} icon={busy ? <Suspense fallback={<Icon name="send" />}><DeferredSpin size="small" /></Suspense> : <Icon name="send" />} onClick={() => void submitQuestion(null, question)} />}
           />
         </div>
@@ -729,7 +729,7 @@ function App() {
               <section className="settings-section">
                 <div className="settings-section-heading">
                   <div><h3>知识库资料</h3><p>删除后会同步移除对应知识片段和向量索引。</p></div>
-                  <Button className="settings-add-document" onClick={() => { setShowSettings(false); fileInput.current?.click(); }} disabled={busy || isDeletingDocument}><span>＋</span> 添加资料</Button>
+                  <Button className="settings-add-document" onClick={() => { setShowSettings(false); fileInput.current?.click(); }} disabled={busy || isDeletingDocument}><UploadOutlined /> 添加资料</Button>
                 </div>
                 <div className="settings-stats">
                   <div><strong>{docs.length}</strong><span>份资料</span></div>
