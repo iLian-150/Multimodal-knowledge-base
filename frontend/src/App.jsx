@@ -3,7 +3,7 @@ import Bubble from "@ant-design/x/es/bubble/index.js";
 import Conversations from "@ant-design/x/es/conversations/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
 import Welcome from "@ant-design/x/es/welcome/index.js";
-import { AppstoreAddOutlined, DeleteOutlined, DownOutlined, FormOutlined, PaperClipOutlined, RightOutlined, UploadOutlined } from "@ant-design/icons";
+import { AppstoreAddOutlined, DeleteOutlined, DownOutlined, FormOutlined, LeftOutlined, PaperClipOutlined, RightOutlined, UploadOutlined } from "@ant-design/icons";
 import Button from "antd/es/button";
 import Dropdown from "antd/es/dropdown";
 import Input from "antd/es/input";
@@ -568,14 +568,14 @@ function App() {
             onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
             title={sidebarCollapsed ? "展开侧栏" : "收起侧栏"}
             aria-label={sidebarCollapsed ? "展开侧栏" : "收起侧栏"}
-          >{sidebarCollapsed ? "›" : "‹"}</button>
+          >{sidebarCollapsed ? <RightOutlined /> : <LeftOutlined />}</button>
         </div>
 
         <Button className="new-chat" onClick={createConversation} disabled={busy} title="新建对话" icon={<span className="new-chat-icon"><FormOutlined /></span>}>
           <span className="new-chat-label">新建对话</span>
         </Button>
 
-        <div className="history-label"><span>最近对话</span><Button type="text" title="新建对话" onClick={createConversation} disabled={busy}><FormOutlined /></Button></div>
+        <div className="history-label">最近对话</div>
         <nav className="conversation-list" aria-label="最近对话">
           {sortedConversations.length ? (
             <Conversations
