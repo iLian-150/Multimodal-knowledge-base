@@ -3,7 +3,7 @@ import Bubble from "@ant-design/x/es/bubble/index.js";
 import Conversations from "@ant-design/x/es/conversations/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
 import Welcome from "@ant-design/x/es/welcome/index.js";
-import { AppstoreAddOutlined, DeleteOutlined, FormOutlined, PaperClipOutlined, UploadOutlined } from "@ant-design/icons";
+import { AppstoreAddOutlined, DeleteOutlined, DownOutlined, FormOutlined, PaperClipOutlined, RightOutlined, UploadOutlined } from "@ant-design/icons";
 import Button from "antd/es/button";
 import Dropdown from "antd/es/dropdown";
 import Input from "antd/es/input";
@@ -597,6 +597,7 @@ function App() {
         </nav>
 
         <div className="sidebar-bottom">
+          <button className="settings-toggle" onClick={openSettings} title="服务设置"><span><Icon name="settings" /></span><span className="settings-label">服务设置</span><RightOutlined className="settings-chevron" /></button>
           <Dropdown
             trigger={["click"]}
             placement="topLeft"
@@ -628,10 +629,9 @@ function App() {
             <Button className="workspace-switcher-button" title={`工作区域：${activeWorkspace.name}`} disabled={busy}>
               <span className="workspace-switcher-icon"><Icon name="workspace" /></span>
               <span className="workspace-switcher-copy"><small>工作区域</small><strong>{activeWorkspace.name}</strong></span>
-              <span className="workspace-switcher-chevron">⌄</span>
+              <DownOutlined className="workspace-switcher-chevron" />
             </Button>
           </Dropdown>
-          <button className="settings-toggle" onClick={openSettings} title="服务设置"><span><Icon name="settings" /></span><span className="settings-label">服务设置</span><span className="settings-chevron">›</span></button>
         </div>
       </aside>
 
