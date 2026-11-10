@@ -558,17 +558,18 @@ function App() {
       {mobileNav && <button className="mobile-scrim" aria-label="关闭侧栏" onClick={() => setMobileNav(false)} />}
       <aside className={`sidebar ${mobileNav ? "sidebar-open" : ""}`}>
         <div className="sidebar-header">
-          <button className="brand" onClick={createConversation} aria-label="新建对话" disabled={busy}>
+          <div className="brand" aria-label="库解">
             <span className="brand-symbol"><i /><i /><i /></span>
             <span className="brand-name">库解</span>
-          </button>
-          <button
+          </div>
+          <Button
             className="sidebar-collapse"
-            type="button"
+            type="text"
             onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
             title={sidebarCollapsed ? "展开侧栏" : "收起侧栏"}
             aria-label={sidebarCollapsed ? "展开侧栏" : "收起侧栏"}
-          >{sidebarCollapsed ? <RightOutlined /> : <LeftOutlined />}</button>
+            icon={sidebarCollapsed ? <RightOutlined /> : <LeftOutlined />}
+          />
         </div>
 
         <Button className="new-chat" onClick={createConversation} disabled={busy} title="新建对话" icon={<span className="new-chat-icon"><FormOutlined /></span>}>
@@ -597,7 +598,9 @@ function App() {
         </nav>
 
         <div className="sidebar-bottom">
-          <button className="settings-toggle" onClick={openSettings} title="服务设置"><span><Icon name="settings" /></span><span className="settings-label">服务设置</span><RightOutlined className="settings-chevron" /></button>
+          <Button className="settings-toggle" type="text" onClick={openSettings} title="服务设置">
+            <span><Icon name="settings" /></span><span className="settings-label">服务设置</span><RightOutlined className="settings-chevron" />
+          </Button>
           <Dropdown
             trigger={["click"]}
             placement="topLeft"
