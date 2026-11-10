@@ -1,0 +1,60 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 16px 12px 12px;
+  border-right: 1px solid #eceef1;
+  background: #f7f8fa;
+  color: #292c33;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+}
+
+.header { display: flex; align-items: center; justify-content: space-between; height: 40px; margin: 0 4px 20px; }
+.brand { display: flex; align-items: center; gap: 9px; padding: 0; border: 0; background: transparent; color: #202630; font-size: 21px; font-weight: 700; cursor: pointer; }
+.brand:disabled { cursor: default; }
+.brandMark { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 8px; background: #263245; color: #fff; }
+.iconButton:global(.ant-btn) { display: grid; width: 32px; height: 32px; min-width: 32px; place-items: center; padding: 0; color: #838995; }
+.actions { display: grid; gap: 4px; margin-bottom: 19px; }
+.action:global(.ant-btn), .newChat:global(.ant-btn) { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 40px; gap: 11px; padding: 0 12px; border: 0; border-radius: 9px; color: #565c67; font-size: 14px; text-align: left; box-shadow: none; }
+.newChat:global(.ant-btn) { height: 42px; background: #e9eefb; color: #315bc0; font-weight: 600; }
+.newChat:global(.ant-btn):hover:not(:disabled) { background: #dfe7f9; color: #254da9; }
+.history { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #d9dce2 transparent; }
+.conversations:global(.ant-conversations) { gap: 2px; padding: 0; overflow: visible; }
+.conversations :global(.ant-conversations-group-title) { height: 32px; min-height: 32px; padding: 0 12px; color: #999da5; font-size: 12px; }
+.conversations :global(.ant-conversations-list) { gap: 2px; margin-bottom: 17px; }
+.conversations :global(.ant-conversations-item) { height: 38px; min-height: 38px; gap: 2px; padding: 0 7px 0 0; border-radius: 8px; }
+.conversations :global(.ant-conversations-item-active) { background: #e8ecf4; }
+.conversations :global(.ant-conversations-label) { min-width: 0; }
+.conversationTitle:global(.ant-btn) { display: block; width: 100%; height: 38px; padding: 0 12px; overflow: hidden; background: transparent; color: #444b58; font-size: 14px; font-weight: 400; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.conversationTitle:global(.ant-btn):hover:not(:disabled) { background: transparent; color: #242b38; }
+.conversations :global(.ant-conversations-item-active) .conversationTitle { color: #263c65; font-weight: 500; }
+.menuTrigger:global(.ant-btn) { display: grid; width: 26px; height: 26px; min-width: 26px; place-items: center; padding: 0; color: #858c99; opacity: 0; pointer-events: none; }
+.conversations :global(.ant-conversations-item):is(:hover, :focus-within) .menuTrigger { opacity: 1; pointer-events: auto; }
+.emptyHistory { display: grid; justify-items: start; gap: 10px; padding: 18px 12px; color: #9ca2ad; font-size: 13px; }
+.emptyHistory small { color: #a9aeb7; font-size: 12px; line-height: 1.7; }
+.footer { display: grid; flex: 0 0 auto; gap: 4px; margin-top: auto; padding-top: 10px; border-top: 1px solid #e9ebef; }
+.workspace:global(.ant-btn) { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 57px; gap: 10px; padding: 7px 10px; border: 0; color: #343b48; text-align: left; box-shadow: none; }
+.workspaceIcon { display: grid; flex: 0 0 32px; width: 32px; height: 32px; place-items: center; border: 1px solid #e4e7ed; border-radius: 9px; background: #fff; color: #65728a; }
+.workspaceCopy { display: grid; flex: 1; min-width: 0; gap: 3px; }
+.workspaceCopy strong { overflow: hidden; color: #424a58; font-size: 13px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.workspaceCopy small { color: #9ba0aa; font-size: 11px; }
+.workspaceChevron { flex: 0 0 auto; margin-left: auto; color: #969da9; }
+.rail { padding-inline: 10px; }
+.rail .header { justify-content: center; margin-inline: 0; }
+.rail .actions { gap: 8px; }
+.rail .newChat, .rail .action, .rail .workspace { justify-content: center; width: 44px; height: 42px; padding: 0; }
+.rail .workspaceIcon { border: 0; background: transparent; }
+.searchInput { margin-top: 8px; }
+.searchScope { margin: 13px 1px 9px; color: #9197a1; font-size: 12px; }
+.searchResults { max-height: min(420px, 55dvh); overflow-y: auto; }
+.searchResult { display: flex; align-items: flex-start; width: 100%; gap: 11px; padding: 12px; border: 0; border-radius: 9px; background: transparent; color: #8e96a4; text-align: left; cursor: pointer; }
+.searchResult:hover, .searchResultSelected { background: #f1f3f7; }
+.searchResult > svg { flex-shrink: 0; margin-top: 2px; }
+.searchResult > span { display: grid; min-width: 0; gap: 5px; }
+.searchResult strong { overflow: hidden; color: #384253; font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.searchResult small { overflow: hidden; color: #969da8; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (hover: none) { .menuTrigger:global(.ant-btn) { opacity: 1; pointer-events: auto; } }
+@media (prefers-reduced-motion: reduce) { .sidebar * { transition: none !important; } }

@@ -19,63 +19,13 @@ button, input, textarea { font: inherit; }
 button { color: inherit; }
 button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid #625fd533; outline-offset: 2px; }
 
-.app-shell { display: grid; grid-template-columns: 272px minmax(0, 1fr); width: 100%; height: 100dvh; min-height: 0; background: #fff; transition: grid-template-columns .2s ease; }
-.app-shell.sidebar-collapsed { grid-template-columns: 76px minmax(0, 1fr); }
-.sidebar { position: relative; z-index: 5; display: flex; flex-direction: column; min-width: 0; height: 100%; padding: 18px 14px 12px; border-right: 1px solid #ececf1; background: #f8f8fa; }
-.sidebar-header { display: flex; align-items: center; justify-content: space-between; min-width: 0; gap: 8px; margin: 0 3px 22px; }
-.brand { display: flex; align-items: center; min-width: 0; gap: 10px; padding: 0; border: 0; background: transparent; }
-.new-chat:disabled { cursor: default; opacity: .55; }
+.app-shell { display: grid; grid-template-columns: 256px minmax(0, 1fr); width: 100%; height: 100dvh; min-height: 0; background: #fff; transition: grid-template-columns .2s ease; }
+.app-shell.sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr); }
 .brand-symbol { position: relative; display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 31px; height: 31px; gap: 3px; border-radius: 10px; background: linear-gradient(145deg, #7774e2, #5752bf); box-shadow: 0 3px 9px #615dd526; }
 .brand-symbol i { display: block; width: 3px; border-radius: 5px; background: #fff; }
 .brand-symbol i:nth-child(1) { height: 8px; opacity: .72; }
 .brand-symbol i:nth-child(2) { height: 14px; }
 .brand-symbol i:nth-child(3) { height: 10px; opacity: .82; }
-.brand-name { color: var(--ink); font-size: 19px; font-weight: 700; letter-spacing: -.35px; }
-.sidebar-collapse.ant-btn { display: grid; flex: 0 0 28px; place-items: center; width: 28px; height: 28px; min-width: 28px; padding: 0; border: 0; border-radius: 8px; background: transparent; box-shadow: none; color: #8b8d98; font-size: 11px; }
-.sidebar-collapse.ant-btn:hover:not(:disabled) { background: #efeff3; color: var(--accent); }
-
-.new-chat.ant-btn { display: flex; justify-content: flex-start; width: 100%; height: 42px; padding: 0 10px; border: 1px solid #e6e6ec; border-radius: 11px; background: #fff; box-shadow: 0 1px 2px #1e20300a; color: #343540; font-size: 14px; font-weight: 600; }
-.new-chat.ant-btn:hover:not(:disabled) { border-color: #dcdaf0; background: #fff; color: var(--accent); box-shadow: 0 2px 8px #25264a0c; }
-.new-chat.ant-btn .ant-btn-icon { margin-inline-end: 9px; }
-.new-chat-icon { display: grid; width: 24px; height: 24px; place-items: center; color: #6966bf; font-size: 15px; }
-.history-label { margin: 25px 8px 9px; color: #777985; font-size: 12px; font-weight: 600; }
-.conversation-list { display: grid; flex: 1 1 auto; align-content: start; min-height: 80px; gap: 3px; overflow: auto; }
-.conversation-list:has(.library-conversations) { display: block; }
-.history-empty { margin: 8px 10px; color: #92939d; font-size: 13px; line-height: 1.7; }
-.library-conversations.ant-conversations { display: grid; align-content: start; width: 100%; gap: 3px; padding: 0 1px 8px; overflow: visible; background: transparent; }
-.library-conversations .ant-conversations-group-title { height: 32px; min-height: 32px; padding: 0 8px; color: #777985; font-size: 12px; font-weight: 600; }
-.library-conversations .ant-conversations-item { position: relative; min-height: 40px; padding: 7px 32px 7px 10px; border-radius: 9px; color: #555762; font-size: 14px; transition: background .15s, color .15s; }
-.library-conversations .ant-conversations-item:hover { background: #f0f0f3; }
-.library-conversations .ant-conversations-item-active { background: #f0f0f3; color: #30313b; box-shadow: none; font-weight: 600; }
-.library-conversations .ant-conversations-item-active:hover { background: #ebebef; }
-.library-conversations .ant-conversations-item-active::before { position: absolute; inset: 10px auto 10px 0; width: 2px; border-radius: 4px; background: #6864b3; content: ""; }
-.library-conversations .ant-conversations-item-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.library-conversations .ant-conversations-icon { color: #999ba5; font-size: 14px; }
-.library-conversations .ant-conversations-menu-icon { color: #999ba5; font-size: 13px; opacity: 0; transition: opacity .15s, color .15s; }
-.library-conversations .ant-conversations-item-active .ant-conversations-menu-icon { opacity: 0; }
-.library-conversations .ant-conversations-item .ant-conversations-menu-icon-mobile { opacity: .7; }
-.library-conversations .ant-conversations-item:hover .ant-conversations-menu-icon, .library-conversations .ant-conversations-item:focus-within .ant-conversations-menu-icon { color: #b75a5e; opacity: 1; }
-
-.sidebar-bottom { display: grid; flex: 0 0 auto; gap: 6px; margin-top: auto; padding: 12px 0 0; border-top: 1px solid #e7e7ed; }
-.settings-toggle.ant-btn { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 40px; gap: 9px; padding: 0 8px; border: 0; border-radius: 9px; background: transparent; box-shadow: none; color: #5f616d; font-size: 14px; text-align: left; }
-.settings-toggle.ant-btn:hover:not(:disabled) { background: #efeff3; color: #353641; }
-.settings-toggle > span:first-child, .workspace-switcher-icon { display: grid; flex: 0 0 28px; place-items: center; width: 28px; height: 28px; color: #777984; font-size: 15px; }
-.settings-toggle > span:first-child { color: #737580; }
-.workspace-switcher-icon { color: #737580; }
-.settings-toggle > span:first-child .iconfont-icon { width: 15px; height: 15px; }
-.settings-chevron { margin-left: auto; color: #a0a1aa; font-size: 11px; }
-.workspace-switcher-button.ant-btn { display: flex; align-items: center; justify-content: flex-start; width: 100%; min-height: 52px; gap: 9px; padding: 6px 8px; border: 1px solid #e5e5ec; border-radius: 11px; background: #fff; text-align: left; box-shadow: none; }
-.workspace-switcher-button.ant-btn:hover:not(:disabled) { border-color: #dcdaf0; background: #fff; color: inherit; box-shadow: 0 2px 8px #25264a0c; }
-.workspace-switcher-copy { display: grid; min-width: 0; flex: 1; gap: 2px; }
-.workspace-switcher-copy small { color: #898b96; font-size: 11px; }
-.workspace-switcher-copy strong { overflow: hidden; color: #363743; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.workspace-switcher-chevron { flex: 0 0 auto; color: #898b96; font-size: 10px; }
-.sidebar-collapsed .sidebar-header { justify-content: center; margin-right: 0; margin-left: 0; }
-.sidebar-collapsed .brand { gap: 0; }
-.sidebar-collapsed .brand-name, .sidebar-collapsed .new-chat-label, .sidebar-collapsed .history-label, .sidebar-collapsed .settings-label, .sidebar-collapsed .settings-chevron, .sidebar-collapsed .workspace-switcher-copy, .sidebar-collapsed .workspace-switcher-chevron { display: none; }
-.sidebar-collapsed .new-chat { justify-content: center; padding: 0; }
-.sidebar-collapsed .new-chat.ant-btn .ant-btn-icon { margin: 0; }
-.sidebar-collapsed .settings-toggle, .sidebar-collapsed .workspace-switcher-button { justify-content: center; padding: 6px; }
 
 .main-panel { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; overflow: hidden; background: #fff; }
 .topbar { display: none; }
@@ -237,8 +187,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .library-confirm-modal .ant-modal-footer .ant-btn { height: 38px; border-radius: 10px; font-size: 14px; }
 .confirm-dialog-description { margin: 2px 0; color: #6e707b; font-size: 15px; line-height: 1.8; overflow-wrap: anywhere; }
 .confirm-dialog-description small { color: #999ba4; font-size: 13px; }
-.workspace-permission-note { display: block; max-width: 230px; color: #888a95; font-size: 12px; line-height: 1.6; white-space: normal; }
-.ant-dropdown-menu-item-disabled:has(.workspace-permission-note) { height: auto; padding: 8px 12px; color: #888a95 !important; cursor: default; white-space: normal; }
 
 @keyframes fade-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes blink { to { visibility: hidden; } }
@@ -248,20 +196,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 
 @media (max-width: 900px) {
   .app-shell { grid-template-columns: 236px minmax(0, 1fr); }
-  .sidebar { padding-right: 12px; padding-left: 12px; }
-  .app-shell.sidebar-collapsed { grid-template-columns: 72px minmax(0, 1fr); }
+  .app-shell.sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr); }
 }
 
 @media (max-width: 700px) {
   .app-shell, .app-shell.sidebar-collapsed { display: block; height: 100dvh; }
-  .sidebar { position: fixed; z-index: 21; inset: 0 auto 0 0; width: min(290px, 84vw); padding: 20px 15px 13px; transform: translateX(-102%); transition: transform .22s ease; box-shadow: 18px 0 45px #20212a1f; }
-  .sidebar.sidebar-open { transform: translateX(0); }
-  .sidebar-collapse { display: none; }
-  .sidebar-collapsed .brand-name, .sidebar-collapsed .new-chat-label, .sidebar-collapsed .history-label, .sidebar-collapsed .settings-label, .sidebar-collapsed .settings-chevron, .sidebar-collapsed .workspace-switcher-copy, .sidebar-collapsed .workspace-switcher-chevron { display: initial; }
-  .sidebar-collapsed .new-chat { justify-content: flex-start; padding: 0 11px; }
-  .sidebar-collapsed .new-chat.ant-btn .ant-btn-icon { margin-inline-end: 9px; }
-  .sidebar-collapsed .settings-toggle, .sidebar-collapsed .workspace-switcher-button { justify-content: flex-start; padding: 0 8px; }
-  .mobile-scrim { position: fixed; z-index: 20; inset: 0; display: block; width: 100%; height: 100%; border: 0; background: #20212a40; }
   .main-panel { width: 100%; height: 100%; }
   .topbar { display: flex; align-items: center; min-height: 50px; padding: 0 15px; }
   .mobile-menu.ant-btn { display: grid; width: 36px; height: 36px; min-width: 36px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 11px; background: #fff; box-shadow: none; color: #656773; font-size: 17px; }

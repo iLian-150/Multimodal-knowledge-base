@@ -1,13 +1,13 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Bubble from "@ant-design/x/es/bubble/index.js";
-import Conversations from "@ant-design/x/es/conversations/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
 import Welcome from "@ant-design/x/es/welcome/index.js";
-import { AppstoreAddOutlined, DeleteOutlined, DownOutlined, FormOutlined, LeftOutlined, MenuOutlined, PaperClipOutlined, RightOutlined, UploadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, PaperClipOutlined, UploadOutlined } from "@ant-design/icons";
+import { PanelLeft } from "lucide-react";
 import Button from "antd/es/button";
-import Dropdown from "antd/es/dropdown";
 import Input from "antd/es/input";
 import Modal from "antd/es/modal";
+import Sidebar from "./components/Sidebar.jsx";
 import "./iconfont.css";
 
 const MarkdownRenderer = lazy(() => import("./MarkdownRenderer.jsx"));
@@ -19,13 +19,14 @@ const API_DEFAULT = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"
 const STORAGE_KEY = "zhixu-rag-conversations-v1";
 const WORKSPACES_KEY = "zhixu-rag-workspaces-v1";
 const ACTIVE_WORKSPACE_KEY = "zhixu-rag-active-workspace-v1";
+const ACTIVE_CONVERSATIONS_KEY = "kujie-rag-active-conversations-v1";
+const SIDEBAR_COLLAPSED_KEY = "kujie-rag-sidebar-collapsed-v1";
 const DEFAULT_WORKSPACE_ID = "campus-default";
 const DEFAULT_WORKSPACE = { id: DEFAULT_WORKSPACE_ID, name: "校园知识库" };
 const API_KEY = "zhixu-rag-api-base-v1";
 const RERANK_RULES_KEY = "zhixu-rag-rerank-rules-v1";
 const HALLUCINATION_THRESHOLD_KEY = "zhixu-rag-hallucination-threshold-v1";
 const ACCEPTED_FILES = ".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff";
-const CONVERSATION_GROUPING = { label: (group) => group };
 function Icon({ name, className = "" }) {
   return <span className={`iconfont-icon iconfont-${name} ${className}`.trim()} aria-hidden="true" />;
 }
@@ -36,18 +37,6 @@ function makeId() {
 
 function nextUpdatedAt(conversations) {
   return Math.max(Date.now(), ...conversations.map((item) => Number(item.updatedAt) || 0)) + 1;
-}
-
-function conversationPeriod(updatedAt) {
-  const date = new Date(Number(updatedAt));
-  if (Number.isNaN(date.getTime())) return "更早";
-  const today = new Date();
-  const startOfDay = (value) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
-  const daysAgo = Math.round((startOfDay(today) - startOfDay(date)) / 86400000);
-  if (daysAgo <= 0) return "今天";
-  if (daysAgo === 1) return "昨天";
-  if (daysAgo <= 7) return "近 7 天";
-  return "更早";
 }
 
 function readConversations() {
@@ -73,11 +62,17 @@ function readWorkspaces() {
   return [DEFAULT_WORKSPACE];
 }
 
-function readActiveConversationId() {
-  const workspaceId = localStorage.getItem(ACTIVE_WORKSPACE_KEY) || DEFAULT_WORKSPACE_ID;
-  return readConversations()
-    .filter((item) => item.workspaceId === workspaceId)
-    .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))[0]?.id || null;
+function hasConversationContent(conversation) {
+  return conversation.messages?.some((message) => message.role === "user" && message.text?.trim());
+}
+
+function readActiveConversationId(workspaceId = localStorage.getItem(ACTIVE_WORKSPACE_KEY) || DEFAULT_WORKSPACE_ID) {
+  const available = readConversations().filter((item) => item.workspaceId === workspaceId && hasConversationContent(item));
+  try {
+    const selected = JSON.parse(localStorage.getItem(ACTIVE_CONVERSATIONS_KEY) || "{}");
+    if (Object.hasOwn(selected, workspaceId)) return available.some((item) => item.id === selected[workspaceId]) ? selected[workspaceId] : null;
+  } catch { /* Use the most recent conversation when old preferences cannot be read. */ }
+  return available.sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))[0]?.id || null;
 }
 
 function readRerankRules() {
@@ -173,15 +168,15 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true");
   const [showSettings, setShowSettings] = useState(false);
   const [documentDelete, setDocumentDelete] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const fileInput = useRef(null);
   const textInput = useRef(null);
   const scrollArea = useRef(null);
-  const draftConversationRef = useRef(null);
   const summaryRequestRef = useRef(0);
+  const closeMobileNav = useCallback(() => setMobileNav(false), []);
 
   const activeConversation = useMemo(
     () => conversations.find((item) => item.id === activeId && item.workspaceId === activeWorkspaceId) || null,
@@ -201,6 +196,17 @@ function App() {
   useEffect(() => {
     localStorage.setItem(ACTIVE_WORKSPACE_KEY, activeWorkspaceId);
   }, [activeWorkspaceId]);
+
+  useEffect(() => {
+    try {
+      const selected = JSON.parse(localStorage.getItem(ACTIVE_CONVERSATIONS_KEY) || "{}");
+      localStorage.setItem(ACTIVE_CONVERSATIONS_KEY, JSON.stringify({ ...selected, [activeWorkspaceId]: activeId }));
+    } catch { /* Keep navigation usable if browser preferences are unavailable. */ }
+  }, [activeId, activeWorkspaceId]);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     localStorage.setItem(API_KEY, apiBase);
@@ -253,73 +259,52 @@ function App() {
           ...item,
           messages: updated,
           updatedAt,
-          title: firstUser ? firstUser.text.slice(0, 30) : item.title,
+          title: !item.customTitle && firstUser ? firstUser.text.slice(0, 30) : item.title,
         };
       });
     });
   }
 
-  function bumpConversation(conversationId) {
-    setConversations((items) => {
-      const updatedAt = nextUpdatedAt(items);
-      return items.map((item) => item.id === conversationId ? { ...item, updatedAt } : item);
-    });
-  }
-
-  function focusComposer() {
+  const focusComposer = useCallback(() => {
     if (typeof textInput.current?.focus === "function") textInput.current.focus();
     else document.querySelector(".chat-sender textarea")?.focus();
-  }
+  }, []);
 
-  function createConversation() {
+  const createConversation = useCallback(() => {
     if (busy) return;
-    const reservedDraftId = draftConversationRef.current;
-    if (reservedDraftId) {
-      const reservedDraft = conversations.find((item) => item.id === reservedDraftId);
-      if (!reservedDraft || !reservedDraft.messages?.length) {
-        if (reservedDraft) bumpConversation(reservedDraftId);
-        setActiveId(reservedDraftId);
-        setQuestion("");
-        setMobileNav(false);
-        window.setTimeout(focusComposer, 0);
-        return;
-      }
-      draftConversationRef.current = null;
-    }
-    const existingDraft = conversations.find((item) => item.workspaceId === activeWorkspaceId && !item.messages?.length);
-    if (existingDraft) {
-      bumpConversation(existingDraft.id);
-      draftConversationRef.current = existingDraft.id;
-      setActiveId(existingDraft.id);
-      setQuestion("");
-      setMobileNav(false);
-      window.setTimeout(focusComposer, 0);
-      return;
-    }
-    const conversation = { id: makeId(), title: "新对话", messages: [], updatedAt: Date.now(), workspaceId: activeWorkspaceId };
-    draftConversationRef.current = conversation.id;
-    setConversations((items) => [conversation, ...items]);
-    setActiveId(conversation.id);
+    setActiveId(null);
     setQuestion("");
     setMobileNav(false);
+    setStatus({ kind: "idle", text: "" });
     window.setTimeout(focusComposer, 0);
-  }
+  }, [busy, focusComposer]);
 
-  function deleteConversation(conversationId) {
+  const selectConversation = useCallback((conversationId) => {
+    if (!conversations.some((item) => item.id === conversationId && item.workspaceId === activeWorkspaceId)) return;
+    setActiveId(conversationId);
+    setQuestion("");
+    setMobileNav(false);
+  }, [conversations, activeWorkspaceId]);
+
+  const renameConversation = useCallback((conversationId, title) => {
+    if (busy || !title.trim()) return;
+    setConversations((items) => items.map((item) => item.id === conversationId ? { ...item, title: title.trim(), customTitle: true } : item));
+  }, [busy]);
+
+  const deleteConversation = useCallback((conversationId) => {
     if (busy) return;
     const conversation = conversations.find((item) => item.id === conversationId);
     if (!conversation) return;
     const title = conversation.title || "新对话";
     setDeleteConfirmation({ type: "conversation", conversationId, title });
-  }
+  }, [busy, conversations]);
 
   function removeConversation(conversationId) {
     const remaining = conversations.filter((item) => item.id !== conversationId);
     setConversations(remaining);
-    if (draftConversationRef.current === conversationId) draftConversationRef.current = null;
     if (activeId === conversationId) {
       const remainingInWorkspace = remaining
-        .filter((item) => item.workspaceId === activeWorkspaceId)
+        .filter((item) => item.workspaceId === activeWorkspaceId && hasConversationContent(item))
         .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0));
       setActiveId(remainingInWorkspace[0]?.id || null);
       setQuestion("");
@@ -329,14 +314,10 @@ function App() {
 
   function selectWorkspace(workspaceId) {
     if (busy) return;
-    const workspaceConversations = conversations
-      .filter((item) => item.workspaceId === workspaceId)
-      .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0));
     summaryRequestRef.current += 1;
     setActiveWorkspaceId(workspaceId);
     setSummary(null);
-    setActiveId(workspaceConversations[0]?.id || null);
-    draftConversationRef.current = null;
+    setActiveId(readActiveConversationId(workspaceId));
     setQuestion("");
     setStatus({ kind: "idle", text: "" });
     setWorkspaceCreateOpen(false);
@@ -361,6 +342,7 @@ function App() {
   function openSettings() {
     if (["completed", "failed"].includes(documentDelete?.status)) setDocumentDelete(null);
     setShowSettings(true);
+    setMobileNav(false);
     refreshStatus();
   }
 
@@ -404,7 +386,6 @@ function App() {
     const text = (typeof submittedText === "string" ? submittedText : question).trim();
     if (!text || busy) return;
     const conversationId = activeId || makeId();
-    if (draftConversationRef.current === conversationId) draftConversationRef.current = null;
     if (!activeId) {
       setActiveId(conversationId);
       setConversations((items) => [{ id: conversationId, title: "新对话", messages: [], updatedAt: Date.now(), workspaceId: activeWorkspaceId }, ...items]);
@@ -505,12 +486,6 @@ function App() {
     const files = Array.from(fileList || []);
     if (!files.length || busy) return;
     setBusy(true);
-    const conversationId = activeId || makeId();
-    if (draftConversationRef.current === conversationId) draftConversationRef.current = null;
-    if (!activeId) {
-      setActiveId(conversationId);
-      setConversations((items) => [{ id: conversationId, title: "新对话", messages: [], updatedAt: Date.now(), workspaceId: activeWorkspaceId }, ...items]);
-    }
     for (const file of files) {
       setUploadProgress({ filename: file.name, phase: "准备文件", percent: 0, indeterminate: true, kind: "working" });
       const updateFileProgress = (progress) => setUploadProgress((current) => ({
@@ -559,115 +534,36 @@ function App() {
 
   const sortedConversations = useMemo(
     () => conversations
-      .filter((item) => item.workspaceId === activeWorkspaceId)
+      .filter((item) => item.workspaceId === activeWorkspaceId && hasConversationContent(item))
       .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0)),
     [conversations, activeWorkspaceId],
   );
-  const conversationItems = useMemo(
-    () => sortedConversations.map((item) => ({
-      key: item.id,
-      label: item.title || "新对话",
-      icon: <Icon name="conversation" className="conversation-mark" />,
-      group: conversationPeriod(item.updatedAt),
-    })),
-    [sortedConversations],
-  );
-  const hasConversationGroups = useMemo(
-    () => new Set(conversationItems.map((item) => item.group)).size > 1,
-    [conversationItems],
-  );
-  const activeWorkspace = workspaces.find((workspace) => workspace.id === activeWorkspaceId) || DEFAULT_WORKSPACE;
   const docs = summary?.sources || [];
 
   return (
     <div className={`app-shell ${sidebarCollapsed && !mobileNav ? "sidebar-collapsed" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }} onDrop={(event) => { event.preventDefault(); setDragging(false); uploadFiles(event.dataTransfer.files); }}>
-      {mobileNav && <button className="mobile-scrim" aria-label="关闭侧栏" onClick={() => setMobileNav(false)} />}
-      <aside className={`sidebar ${mobileNav ? "sidebar-open" : ""}`} aria-label="主导航">
-        <div className="sidebar-header">
-          <div className="brand">
-            <span className="brand-symbol"><i /><i /><i /></span>
-            <span className="brand-name">库解</span>
-          </div>
-          <Button
-            className="sidebar-collapse"
-            type="text"
-            onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
-            title={sidebarCollapsed ? "展开侧栏" : "收起侧栏"}
-            aria-label={sidebarCollapsed ? "展开侧栏" : "收起侧栏"}
-            icon={sidebarCollapsed ? <RightOutlined /> : <LeftOutlined />}
-          />
-        </div>
-
-        <Button className="new-chat" onClick={createConversation} disabled={busy} title="新建对话" icon={<span className="new-chat-icon"><FormOutlined /></span>}>
-          <span className="new-chat-label">新建对话</span>
-        </Button>
-
-        <div className="history-label">最近对话</div>
-        <nav className="conversation-list" aria-label="最近对话">
-          {sortedConversations.length ? (
-            <Conversations
-              className="library-conversations"
-              activeKey={activeId || undefined}
-              items={conversationItems}
-              groupable={hasConversationGroups ? CONVERSATION_GROUPING : false}
-              onActiveChange={(key) => { setActiveId(key); setMobileNav(false); }}
-              menu={(conversation) => ({
-                trigger: <DeleteOutlined className="ant-conversations-menu-icon conversation-delete-trigger" />,
-                items: [{
-                  key: "delete",
-                  label: "删除对话",
-                  danger: true,
-                  onClick: () => deleteConversation(conversation.key),
-                }],
-              })}
-            />
-          ) : <p className="history-empty">你的对话会显示在这里</p>}
-        </nav>
-
-        <div className="sidebar-bottom">
-          <Button className="settings-toggle" type="text" onClick={openSettings} title="服务设置">
-            <span><Icon name="settings" /></span><span className="settings-label">服务设置</span><RightOutlined className="settings-chevron" />
-          </Button>
-          <Dropdown
-            trigger={["click"]}
-            placement="topLeft"
-            disabled={busy}
-            menu={{
-              selectedKeys: [activeWorkspaceId],
-              items: [
-                { key: "workspace-heading", disabled: true, label: <strong>切换工作区域</strong> },
-                ...workspaces.map((workspace) => ({
-                  key: workspace.id,
-                  label: workspace.name,
-                  icon: <Icon name="workspace" />,
-                })),
-                { type: "divider" },
-                { key: "workspace-permission", disabled: true, label: <small className="workspace-permission-note">资料与检索按工作区域隔离；账号授权后续接入。</small> },
-                { type: "divider" },
-                { key: "create-workspace", label: "新建工作区域", icon: <AppstoreAddOutlined /> },
-              ],
-              onClick: ({ key }) => {
-                if (key === "create-workspace") {
-                  setWorkspaceName("");
-                  setWorkspaceCreateOpen(true);
-                } else if (key !== "workspace-heading" && key !== "workspace-permission") {
-                  selectWorkspace(key);
-                }
-              },
-            }}
-          >
-            <Button className="workspace-switcher-button" title={`工作区域：${activeWorkspace.name}`} disabled={busy}>
-              <span className="workspace-switcher-icon"><Icon name="workspace" /></span>
-              <span className="workspace-switcher-copy"><small>工作区域</small><strong>{activeWorkspace.name}</strong></span>
-              <DownOutlined className="workspace-switcher-chevron" />
-            </Button>
-          </Dropdown>
-        </div>
-      </aside>
+      <Sidebar
+        conversations={sortedConversations}
+        activeId={activeId}
+        busy={busy}
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
+        mobileOpen={mobileNav}
+        onCloseMobile={closeMobileNav}
+        onNewChat={createConversation}
+        onSelectConversation={selectConversation}
+        onRenameConversation={renameConversation}
+        onDeleteConversation={deleteConversation}
+        workspaces={workspaces}
+        activeWorkspaceId={activeWorkspaceId}
+        onSelectWorkspace={selectWorkspace}
+        onCreateWorkspace={() => { setWorkspaceName(""); setWorkspaceCreateOpen(true); setMobileNav(false); }}
+        onOpenSettings={openSettings}
+      />
 
       <main className="main-panel">
         <header className="topbar">
-          <Button className="mobile-menu" type="text" aria-label="打开侧栏" icon={<MenuOutlined />} onClick={() => setMobileNav(true)} />
+          <Button className="mobile-menu" type="text" aria-label="打开侧栏" icon={<PanelLeft size={20} strokeWidth={1.75} />} onClick={() => setMobileNav(true)} />
         </header>
 
         <input ref={fileInput} type="file" className="visually-hidden" multiple accept={ACCEPTED_FILES} onChange={(event) => uploadFiles(event.target.files)} />
