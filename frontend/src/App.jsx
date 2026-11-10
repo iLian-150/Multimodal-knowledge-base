@@ -5,13 +5,13 @@ import Sender from "@ant-design/x/es/sender/index.js";
 import Button from "antd/es/button";
 import Dropdown from "antd/es/dropdown";
 import Input from "antd/es/input";
-import Modal from "antd/es/modal";
 import Progress from "antd/es/progress";
 import Spin from "antd/es/spin";
 import "./iconfont.css";
 
 const MarkdownRenderer = lazy(() => import("./MarkdownRenderer.jsx"));
 const ConfidenceSlider = lazy(() => import("antd/es/slider"));
+const DeferredModal = lazy(() => import("antd/es/modal"));
 
 const API_DEFAULT = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 const STORAGE_KEY = "zhixu-rag-conversations-v1";
@@ -674,9 +674,10 @@ function App() {
         </div>
       </main>
 
-      <Modal
+      <Suspense fallback={null}>
+      {showSettings && <DeferredModal
         className="library-settings-modal"
-        open={showSettings}
+        open
         centered
         width={820}
         style={{ height: "min(820px, calc(100dvh - 40px))" }}
@@ -775,11 +776,11 @@ function App() {
                 <small className="settings-api-help">阈值越低越宽松。设为 0% 时，只要检索到资料，就不会因校验置信度拦截回答；低阈值可能放过依据不足的内容，请核对参考资料。设置仅保存在当前浏览器，并应用于之后的新问题。</small>
               </section>
             </div>
-      </Modal>
+      </DeferredModal>}
 
-      <Modal
+      {workspaceCreateOpen && <DeferredModal
         className="library-workspace-modal"
-        open={workspaceCreateOpen}
+        open
         centered
         width={440}
         title="新建工作区域"
@@ -798,11 +799,11 @@ function App() {
           placeholder="输入工作区域名称"
           aria-label="工作区域名称"
         />
-      </Modal>
+      </DeferredModal>}
 
-      <Modal
+      {deleteConfirmation && <DeferredModal
         className="library-confirm-modal"
-        open={Boolean(deleteConfirmation)}
+        open
         centered
         width={460}
         title={deleteConfirmation?.type === "document" ? "删除这份资料？" : "删除这段对话？"}
@@ -818,7 +819,8 @@ function App() {
             : `确定删除“${deleteConfirmation.title}”吗？删除后无法恢复。`}
           {deleteConfirmation.type === "document" && <><br /><small>此操作无法撤销</small></>}
         </p>}
-      </Modal>
+      </DeferredModal>}
+      </Suspense>
     </div>
   );
 }
@@ -882,3 +884,4 @@ function bytesToBase64(buffer) {
 }
 
 export default App;
+
