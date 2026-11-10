@@ -201,6 +201,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .assistant-markdown th, .assistant-markdown td { min-width: 90px; padding: 7px 9px; border: 1px solid #e9e7e2; text-align: left; }
 .assistant-markdown th { background: #f7f6f3; font-weight: 650; }
 .assistant-markdown a { color: #5554a6; text-decoration: underline; text-underline-offset: 2px; }
+.markdown-loading { color: #8d8998; font-size: .95em; }
 .assistant-markdown hr { margin: 16px 0; border: 0; border-top: 1px solid #eeece8; }
 .message-error .message-text { color: #a94c48; }
 .answer-review-note { margin: 11px 0; padding: 8px 11px; border: 1px solid #efe4c8; border-radius: 10px; background: #fffbf3; color: #806b45; font-size: 13px; line-height: 1.6; }
@@ -581,4 +582,3 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
   .library-settings-modal.ant-modal { max-width: calc(100vw - 24px); margin-block: 12px; }
   .library-settings-modal .ant-modal-content { border-radius: 16px; }
 }
-

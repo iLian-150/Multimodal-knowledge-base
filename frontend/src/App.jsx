@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Bubble from "@ant-design/x/es/bubble/index.js";
 import Conversations from "@ant-design/x/es/conversations/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
@@ -9,9 +9,9 @@ import Modal from "antd/es/modal";
 import Progress from "antd/es/progress";
 import Slider from "antd/es/slider";
 import Spin from "antd/es/spin";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import "./iconfont.css";
+
+const MarkdownRenderer = lazy(() => import("./MarkdownRenderer.jsx"));
 
 const API_DEFAULT = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 const STORAGE_KEY = "zhixu-rag-conversations-v1";
@@ -827,7 +827,7 @@ function MessageContent({ message }) {
   return (
     <div className={`message-text ${!isUser ? "assistant-markdown" : ""}`}>
       {!isUser && message.text
-        ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
+        ? <Suspense fallback={<span className="markdown-loading">正在渲染回答…</span>}><MarkdownRenderer>{message.text}</MarkdownRenderer></Suspense>
         : isUser ? message.text : null}
       {message.pending && message.text && <span className="cursor-blink" />}
       {!isUser && message.hallucination_check?.passed && (message.hallucination_check.issues || []).some((issue) => issue.startsWith("当前阈值已放宽来源校验")) && (
