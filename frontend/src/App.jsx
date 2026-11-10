@@ -5,13 +5,13 @@ import Sender from "@ant-design/x/es/sender/index.js";
 import Button from "antd/es/button";
 import Dropdown from "antd/es/dropdown";
 import Input from "antd/es/input";
-import Progress from "antd/es/progress";
-import Spin from "antd/es/spin";
 import "./iconfont.css";
 
 const MarkdownRenderer = lazy(() => import("./MarkdownRenderer.jsx"));
 const ConfidenceSlider = lazy(() => import("antd/es/slider"));
 const DeferredModal = lazy(() => import("antd/es/modal"));
+const DeferredProgress = lazy(() => import("antd/es/progress"));
+const DeferredSpin = lazy(() => import("antd/es/spin"));
 
 const API_DEFAULT = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 const STORAGE_KEY = "zhixu-rag-conversations-v1";
@@ -669,7 +669,7 @@ function App() {
             autoSize={{ minRows: 1, maxRows: 6 }}
             disabled={busy}
             prefix={<Button type="text" className="attach-button" title="添加资料" aria-label="添加资料" onClick={() => fileInput.current?.click()} disabled={busy}><Icon name="plus" /></Button>}
-            suffix={<Button className="send-button" type="primary" shape="circle" aria-label="发送问题" disabled={!question.trim() || busy} icon={busy ? <Spin size="small" /> : <Icon name="send" />} onClick={() => void submitQuestion(null, question)} />}
+            suffix={<Button className="send-button" type="primary" shape="circle" aria-label="发送问题" disabled={!question.trim() || busy} icon={busy ? <Suspense fallback={<Icon name="send" />}><DeferredSpin size="small" /></Suspense> : <Icon name="send" />} onClick={() => void submitQuestion(null, question)} />}
           />
         </div>
       </main>
@@ -715,7 +715,9 @@ function App() {
                 {documentDelete && (
                   <div className={`document-delete-progress ${documentDelete.status}`} role="status" aria-live="polite">
                     <div className="document-delete-progress-label"><span>{documentDelete.phase}{documentDelete.source ? ` · ${documentDisplayName(documentDelete.source)}` : ""}</span><span>{Math.max(0, Math.min(100, Number(documentDelete.progress) || 0))}%</span></div>
-                    <Progress percent={Math.max(0, Math.min(100, Number(documentDelete.progress) || 0))} showInfo={false} status={documentDelete.status === "failed" ? "exception" : documentDelete.status === "completed" ? "success" : "active"} />
+                    <Suspense fallback={<div className="library-progress-placeholder" role="progressbar" aria-label="正在更新进度" />}>
+                      <DeferredProgress percent={Math.max(0, Math.min(100, Number(documentDelete.progress) || 0))} showInfo={false} status={documentDelete.status === "failed" ? "exception" : documentDelete.status === "completed" ? "success" : "active"} />
+                    </Suspense>
                     {documentDelete.error && <small>{documentDelete.error}</small>}
                   </div>
                 )}
@@ -869,7 +871,9 @@ function UploadProgress({ progress }) {
   return (
     <div className={`upload-progress ${progress.kind || "working"}`} role="status">
       <div className="upload-progress-label"><span>{progress.phase}</span><span>{progress.indeterminate ? "处理中" : `${percent}%`}</span></div>
-      <Progress className={progress.indeterminate ? "library-progress-indeterminate" : ""} percent={progress.indeterminate ? 34 : percent} showInfo={false} status={progress.kind === "error" ? "exception" : progress.kind === "success" ? "success" : "active"} />
+      <Suspense fallback={<div className="library-progress-placeholder" role="progressbar" aria-label="正在更新进度" />}>
+        <DeferredProgress className={progress.indeterminate ? "library-progress-indeterminate" : ""} percent={progress.indeterminate ? 34 : percent} showInfo={false} status={progress.kind === "error" ? "exception" : progress.kind === "success" ? "success" : "active"} />
+      </Suspense>
       {progress.detail && <div className="upload-progress-detail">{progress.detail}</div>}
     </div>
   );
