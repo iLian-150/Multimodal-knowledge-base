@@ -23,7 +23,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .app-shell.sidebar-collapsed { grid-template-columns: 76px minmax(0, 1fr); }
 .sidebar { position: relative; z-index: 5; display: flex; flex-direction: column; min-width: 0; height: 100%; padding: 18px 14px 12px; border-right: 1px solid #ececf1; background: #f8f8fa; }
 .sidebar-header { display: flex; align-items: center; justify-content: space-between; min-width: 0; gap: 8px; margin: 0 3px 22px; }
-.brand { display: flex; align-items: center; min-width: 0; gap: 10px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.brand { display: flex; align-items: center; min-width: 0; gap: 10px; padding: 0; border: 0; background: transparent; }
 .new-chat:disabled { cursor: default; opacity: .55; }
 .brand-symbol { position: relative; display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 31px; height: 31px; gap: 3px; border-radius: 10px; background: linear-gradient(145deg, #7774e2, #5752bf); box-shadow: 0 3px 9px #615dd526; }
 .brand-symbol i { display: block; width: 3px; border-radius: 5px; background: #fff; }
@@ -52,7 +52,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .library-conversations .ant-conversations-item-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .library-conversations .ant-conversations-icon { color: #999ba5; font-size: 14px; }
 .library-conversations .ant-conversations-menu-icon { color: #999ba5; font-size: 13px; opacity: 0; transition: opacity .15s, color .15s; }
-.library-conversations .ant-conversations-menu-icon-mobile { opacity: .7; }
+.library-conversations .ant-conversations-item-active .ant-conversations-menu-icon { opacity: 0; }
+.library-conversations .ant-conversations-item .ant-conversations-menu-icon-mobile { opacity: .7; }
 .library-conversations .ant-conversations-item:hover .ant-conversations-menu-icon, .library-conversations .ant-conversations-item:focus-within .ant-conversations-menu-icon { color: #b75a5e; opacity: 1; }
 
 .sidebar-bottom { display: grid; flex: 0 0 auto; gap: 6px; margin-top: auto; padding: 12px 0 0; border-top: 1px solid #e7e7ed; }
