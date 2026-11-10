@@ -701,7 +701,7 @@ function App() {
         title={<div className="settings-modal-title"><span><Icon name="settings" /></span><div><h2>服务设置</h2><p>管理知识库资料与服务连接</p></div></div>}
         footer={null}
         closable={!isDeletingDocument}
-        maskClosable={!isDeletingDocument}
+        mask={{ closable: !isDeletingDocument }}
         onCancel={() => { if (!isDeletingDocument) setShowSettings(false); }}
       >
             <div className="settings-modal-body">
@@ -779,9 +779,9 @@ function App() {
                     <ConfidenceSlider
                       className="threshold-range"
                       id="hallucination-threshold"
-                      min="0"
-                      max="95"
-                      step="5"
+                      min={0}
+                      max={95}
+                      step={5}
                       value={hallucinationThreshold}
                       onChange={setHallucinationThreshold}
                       aria-label="最低可信度"
