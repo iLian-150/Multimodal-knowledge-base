@@ -407,6 +407,7 @@ function App() {
     setQuestion("");
     setBusy(true);
     setStatus({ kind: "working", text: "正在识别问题类型…" });
+    let cancelQueuedAnswerUpdate = () => {};
     try {
       const response = await fetch(joinApi(apiBase, "/answer/stream"), {
         method: "POST",
@@ -429,9 +430,21 @@ function App() {
       let answer = "";
       let metadata = {};
       let failure = "";
+      let answerRenderTimer = null;
       const apply = (patch) => updateMessages(conversationId, (items) => items.map((message) =>
         message.id === answerId ? { ...message, ...patch } : message,
       ));
+      const flushAnswer = () => {
+        answerRenderTimer = null;
+        apply({ text: answer, ...metadata, pending: true });
+      };
+      const scheduleAnswerRender = () => {
+        if (answerRenderTimer === null) answerRenderTimer = window.setTimeout(flushAnswer, 32);
+      };
+      cancelQueuedAnswerUpdate = () => {
+        if (answerRenderTimer !== null) window.clearTimeout(answerRenderTimer);
+        answerRenderTimer = null;
+      };
       while (true) {
         const { value, done } = await reader.read();
         buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
@@ -450,7 +463,7 @@ function App() {
           }
           if (event === "token") {
             answer += payload.text || "";
-            apply({ text: answer, ...metadata, pending: true });
+            scheduleAnswerRender();
           }
           if (event === "error") failure = payload.reason || "问答服务暂时不可用";
           if (event === "done") answer = payload.answer || answer;
@@ -458,9 +471,11 @@ function App() {
         if (done) break;
       }
       if (failure) throw new Error(failure);
+      cancelQueuedAnswerUpdate();
       apply({ text: answer || "资料中暂时没有找到足够的依据。", ...metadata, pending: false, status: "" });
       setStatus({ kind: "idle", text: "" });
     } catch (error) {
+      cancelQueuedAnswerUpdate();
       updateMessages(conversationId, (items) => items.map((message) => message.id === answerId
         ? { ...message, text: `暂时无法完成回答：${error.message}`, error: true, pending: false }
         : message,
