@@ -25,6 +25,7 @@ const API_KEY = "zhixu-rag-api-base-v1";
 const RERANK_RULES_KEY = "zhixu-rag-rerank-rules-v1";
 const HALLUCINATION_THRESHOLD_KEY = "zhixu-rag-hallucination-threshold-v1";
 const ACCEPTED_FILES = ".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff";
+const CONVERSATION_GROUPING = { label: (group) => group };
 function Icon({ name, className = "" }) {
   return <span className={`iconfont-icon iconfont-${name} ${className}`.trim()} aria-hidden="true" />;
 }
@@ -35,6 +36,18 @@ function makeId() {
 
 function nextUpdatedAt(conversations) {
   return Math.max(Date.now(), ...conversations.map((item) => Number(item.updatedAt) || 0)) + 1;
+}
+
+function conversationPeriod(updatedAt) {
+  const date = new Date(Number(updatedAt));
+  if (Number.isNaN(date.getTime())) return "更早";
+  const today = new Date();
+  const startOfDay = (value) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
+  const daysAgo = Math.round((startOfDay(today) - startOfDay(date)) / 86400000);
+  if (daysAgo <= 0) return "今天";
+  if (daysAgo === 1) return "昨天";
+  if (daysAgo <= 7) return "近 7 天";
+  return "更早";
 }
 
 function readConversations() {
@@ -550,6 +563,19 @@ function App() {
       .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0)),
     [conversations, activeWorkspaceId],
   );
+  const conversationItems = useMemo(
+    () => sortedConversations.map((item) => ({
+      key: item.id,
+      label: item.title || "新对话",
+      icon: <Icon name="conversation" className="conversation-mark" />,
+      group: conversationPeriod(item.updatedAt),
+    })),
+    [sortedConversations],
+  );
+  const hasConversationGroups = useMemo(
+    () => new Set(conversationItems.map((item) => item.group)).size > 1,
+    [conversationItems],
+  );
   const activeWorkspace = workspaces.find((workspace) => workspace.id === activeWorkspaceId) || DEFAULT_WORKSPACE;
   const docs = summary?.sources || [];
 
@@ -582,7 +608,8 @@ function App() {
             <Conversations
               className="library-conversations"
               activeKey={activeId || undefined}
-              items={sortedConversations.map((item) => ({ key: item.id, label: item.title || "新对话", icon: <Icon name="conversation" className="conversation-mark" /> }))}
+              items={conversationItems}
+              groupable={hasConversationGroups ? CONVERSATION_GROUPING : false}
               onActiveChange={(key) => { setActiveId(key); setMobileNav(false); }}
               menu={(conversation) => ({
                 trigger: <DeleteOutlined className="ant-conversations-menu-icon conversation-delete-trigger" />,

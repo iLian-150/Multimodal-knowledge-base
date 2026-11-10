@@ -43,6 +43,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .conversation-list:has(.library-conversations) { display: block; }
 .history-empty { margin: 8px 10px; color: #92939d; font-size: 13px; line-height: 1.7; }
 .library-conversations.ant-conversations { display: grid; align-content: start; width: 100%; gap: 3px; padding: 0 1px 8px; overflow: visible; background: transparent; }
+.library-conversations .ant-conversations-group-title { height: 32px; min-height: 32px; padding: 0 8px; color: #777985; font-size: 12px; font-weight: 600; }
 .library-conversations .ant-conversations-item { position: relative; min-height: 40px; padding: 7px 32px 7px 10px; border-radius: 9px; color: #555762; font-size: 14px; transition: background .15s, color .15s; }
 .library-conversations .ant-conversations-item:hover { background: #f0f0f3; }
 .library-conversations .ant-conversations-item-active { background: #f0f0f3; color: #30313b; box-shadow: none; font-weight: 600; }
