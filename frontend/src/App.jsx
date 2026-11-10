@@ -173,6 +173,7 @@ function App() {
   const textInput = useRef(null);
   const scrollArea = useRef(null);
   const draftConversationRef = useRef(null);
+  const summaryRequestRef = useRef(0);
 
   const activeConversation = useMemo(
     () => conversations.find((item) => item.id === activeId && item.workspaceId === activeWorkspaceId) || null,
@@ -208,12 +209,15 @@ function App() {
   const refreshStatus = useCallback(async () => {
     const api = apiBase.trim();
     if (!api) return;
+    const requestId = ++summaryRequestRef.current;
     try {
-      setSummary(await fetch(joinApi(api, "/kb/summary")).then(parseResponse));
+      const workspace = encodeURIComponent(activeWorkspaceId);
+      const nextSummary = await fetch(joinApi(api, `/kb/summary?workspace_id=${workspace}`)).then(parseResponse);
+      if (requestId === summaryRequestRef.current) setSummary(nextSummary);
     } catch {
-      setSummary(null);
+      if (requestId === summaryRequestRef.current) setSummary(null);
     }
-  }, [apiBase]);
+  }, [apiBase, activeWorkspaceId]);
 
   useEffect(() => {
     refreshStatus();
@@ -317,7 +321,9 @@ function App() {
     const workspaceConversations = conversations
       .filter((item) => item.workspaceId === workspaceId)
       .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0));
+    summaryRequestRef.current += 1;
     setActiveWorkspaceId(workspaceId);
+    setSummary(null);
     setActiveId(workspaceConversations[0]?.id || null);
     draftConversationRef.current = null;
     setQuestion("");
@@ -349,16 +355,16 @@ function App() {
 
   async function deleteDocument(source) {
     if (busy || isDeletingDocument) return;
-    setDeleteConfirmation({ type: "document", source, title: documentDisplayName(source) });
+    setDeleteConfirmation({ type: "document", source, workspaceId: activeWorkspaceId, title: documentDisplayName(source) });
   }
 
-  async function executeDocumentDelete(source) {
+  async function executeDocumentDelete(source, workspaceId) {
     setDocumentDelete({ source, status: "queued", progress: 0, phase: "等待删除", error: "" });
     try {
       let job = await fetch(joinApi(apiBase, "/kb/documents/delete"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source }),
+        body: JSON.stringify({ source, workspace_id: workspaceId }),
       }).then(parseResponse);
       setDocumentDelete(job);
 
@@ -379,7 +385,7 @@ function App() {
     const confirmation = deleteConfirmation;
     setDeleteConfirmation(null);
     if (confirmation.type === "conversation") removeConversation(confirmation.conversationId);
-    else void executeDocumentDelete(confirmation.source);
+    else void executeDocumentDelete(confirmation.source, confirmation.workspaceId);
   }
 
   async function submitQuestion(event, submittedText) {
@@ -408,6 +414,7 @@ function App() {
         body: JSON.stringify({
           question: text,
           session_id: conversationId,
+          workspace_id: activeWorkspaceId,
           rerank_rules: {
             boost_terms: parseRerankTerms(rerankRules.boostTerms),
             exclude_terms: parseRerankTerms(rerankRules.excludeTerms),
@@ -489,7 +496,7 @@ function App() {
         updateFileProgress({ phase: "上传文件", percent: 0, indeterminate: false });
         await postJsonWithProgress(
           joinApi(apiBase, "/kb/document"),
-          { filename: file.name, content_base64: encoded, mode: "append", max_pages: 0, render_dpi: 150 },
+          { filename: file.name, content_base64: encoded, mode: "append", workspace_id: activeWorkspaceId, max_pages: 0, render_dpi: 150 },
           (percent) => updateFileProgress({ phase: "上传文件", percent, indeterminate: false }),
           () => updateFileProgress({ phase: "后端解析文档", percent: 100, indeterminate: true }),
         );
@@ -586,7 +593,7 @@ function App() {
                   icon: <Icon name="workspace" />,
                 })),
                 { type: "divider" },
-                { key: "workspace-permission", disabled: true, label: <small className="workspace-permission-note">当前仅分开展示对话；文档访问隔离需后续配置授权。</small> },
+                { key: "workspace-permission", disabled: true, label: <small className="workspace-permission-note">资料与检索按工作区域隔离；账号授权后续接入。</small> },
                 { type: "divider" },
                 { key: "create-workspace", label: "新建工作区域", icon: <Icon name="plus" /> },
               ],
@@ -873,4 +880,3 @@ function bytesToBase64(buffer) {
 }
 
 export default App;
-

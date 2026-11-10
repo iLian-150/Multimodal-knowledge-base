@@ -43,6 +43,7 @@ class ManufacturingRAGPipeline:
         llm_router: Optional[RuleBasedLLMRouter] = None,
         safety_guard: Optional[SafetyGuard] = None,
         remote_cache_callback: Optional[Callable[[List[DocumentChunk]], None]] = None,
+        workspace_id: Optional[str] = None,
     ) -> None:
         self.config = config
         self.chunks = list(chunks)
@@ -68,6 +69,7 @@ class ManufacturingRAGPipeline:
                 embedding=local_embedding,
                 config=config,
                 cache_callback=remote_cache_callback,
+                workspace_id=workspace_id,
             )
         else:
             self.retriever = HybridRetriever(self.chunks, embedding=embedding, config=config)
@@ -577,5 +579,4 @@ def contextualize_question(question: str, conversation_context: str) -> str:
     if not needs_context:
         return question
     return f"会话上下文：{conversation_context}\n当前问题：{question}"
-
 
