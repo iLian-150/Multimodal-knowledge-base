@@ -1,10 +1,9 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Bubble from "@ant-design/x/es/bubble/index.js";
 import Conversations from "@ant-design/x/es/conversations/index.js";
-import Prompts from "@ant-design/x/es/prompts/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
 import Welcome from "@ant-design/x/es/welcome/index.js";
-import { AppstoreAddOutlined, EditOutlined, FileTextOutlined, FormOutlined, PaperClipOutlined, PictureOutlined, SearchOutlined, UploadOutlined } from "@ant-design/icons";
+import { AppstoreAddOutlined, FormOutlined, PaperClipOutlined, UploadOutlined } from "@ant-design/icons";
 import Button from "antd/es/button";
 import Dropdown from "antd/es/dropdown";
 import Input from "antd/es/input";
@@ -26,13 +25,6 @@ const API_KEY = "zhixu-rag-api-base-v1";
 const RERANK_RULES_KEY = "zhixu-rag-rerank-rules-v1";
 const HALLUCINATION_THRESHOLD_KEY = "zhixu-rag-hallucination-threshold-v1";
 const ACCEPTED_FILES = ".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff";
-const SUGGESTIONS = [
-  { icon: <FileTextOutlined />, title: "总结资料", text: "帮我提炼这批资料的核心知识点" },
-  { icon: <SearchOutlined />, title: "查找细节", text: "资料中关于主要概念的解释是什么？" },
-  { icon: <EditOutlined />, title: "生成练习", text: "根据已上传的资料生成几道复习题" },
-  { icon: <PictureOutlined />, title: "理解图表", text: "解释资料里的图表和图片表达了什么" },
-];
-
 function Icon({ name, className = "" }) {
   return <span className={`iconfont-icon iconfont-${name} ${className}`.trim()} aria-hidden="true" />;
 }
@@ -660,18 +652,6 @@ function App() {
                 description="上传文档、扫描件和图片，直接提问。每个回答都能回到原始资料。"
                 style={{ alignItems: "center", textAlign: "center" }}
                 styles={{ icon: { height: "auto", marginBottom: 8 }, title: { fontSize: 32, fontWeight: 650 }, description: { maxWidth: 560, color: "#85827b", fontSize: 15, lineHeight: 1.8 } }}
-              />
-              <Prompts
-                className="welcome-prompts"
-                items={SUGGESTIONS.map((item) => ({ key: item.title, icon: item.icon, label: item.title, description: item.text }))}
-                onItemClick={({ data }) => {
-                  const suggestion = SUGGESTIONS.find((item) => item.title === data.key);
-                  if (suggestion) {
-                    setQuestion(suggestion.text);
-                    focusComposer();
-                  }
-                }}
-                styles={{ list: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", overflow: "visible" }, item: { minHeight: 68 } }}
               />
             </div>
           ) : (

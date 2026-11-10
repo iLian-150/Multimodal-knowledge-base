@@ -111,7 +111,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 
 .conversation-stage { flex: 1 1 0%; min-width: 0; min-height: 0; overflow-x: hidden; overflow-y: auto; scroll-behavior: smooth; }
 .welcome-view { display: grid; justify-items: center; width: min(100% - 40px, 780px); gap: 26px; margin: auto; padding: clamp(52px, 12vh, 128px) 0 38px; animation: appear .5s ease both; }
-.welcome-prompts { width: 100%; }
 
 .message-list { display: grid; width: min(100% - 42px, 1000px); margin: 0 auto; padding: 42px 0 28px; }
 .message-avatar { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 9px; }
@@ -218,7 +217,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 @media (max-width: 430px) {
   .topbar { padding-right: 10px; padding-left: 10px; }
   .welcome-view { width: calc(100% - 28px); gap: 18px; }
-  .welcome-prompts .ant-prompts-list { grid-template-columns: 1fr; }
   .message-list { width: calc(100% - 14px); grid-template-columns: minmax(0, 1fr); gap: 32px; }
   .message-avatar { width: 24px; height: 24px; }
   .source-name { max-width: 180px; }
