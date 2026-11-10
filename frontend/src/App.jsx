@@ -698,13 +698,11 @@ function App() {
         open
         centered
         width={820}
-        style={{ height: "min(820px, calc(100dvh - 40px))" }}
         title={<div className="settings-modal-title"><span><Icon name="settings" /></span><div><h2>服务设置</h2><p>管理知识库资料与服务连接</p></div></div>}
         footer={null}
         closable={!isDeletingDocument}
         maskClosable={!isDeletingDocument}
         onCancel={() => { if (!isDeletingDocument) setShowSettings(false); }}
-        styles={{ body: { padding: "0 20px 20px", overflowY: "auto" } }}
       >
             <div className="settings-modal-body">
               <section className="settings-section">

@@ -177,7 +177,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .mobile-scrim { display: none; }
 
 .library-settings-modal.ant-modal { max-width: calc(100vw - 32px); max-height: calc(100dvh - 40px); margin-block: 20px; }
-.library-settings-modal .ant-modal-content { display: flex; flex-direction: column; height: 100%; overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 24px 70px #20212a2b; }
+.library-settings-modal .ant-modal-content { display: flex; flex-direction: column; width: 100%; height: min(820px, calc(100dvh - 40px)); max-height: calc(100dvh - 40px); overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 24px 70px #20212a2b; }
 .library-settings-modal .ant-modal-header { flex: 0 0 auto; margin: 0; padding: 20px 24px; border-bottom: 1px solid #f0f0f3; }
 .library-settings-modal .ant-modal-title { font-size: 17px; }
 .library-settings-modal .ant-modal-close { top: 16px; inset-inline-end: 17px; width: 34px; height: 34px; }
@@ -269,7 +269,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
   .composer-zone { width: calc(100% - 24px); padding: 8px 0 max(10px, env(safe-area-inset-bottom)); }
   .chat-sender.ant-sender { min-height: 60px; padding: 9px 10px; border-radius: 19px; }
   .library-settings-modal.ant-modal { max-width: calc(100vw - 24px); margin-block: 12px; }
-  .library-settings-modal .ant-modal-content { border-radius: 16px; }
+  .library-settings-modal .ant-modal-content { height: calc(100dvh - 24px); max-height: calc(100dvh - 24px); border-radius: 16px; }
   .library-settings-modal .ant-modal-header { padding: 16px; }
   .library-settings-modal .ant-modal-body { padding: 0 12px 12px; }
   .settings-modal-body { gap: 10px; padding-top: 12px; }
