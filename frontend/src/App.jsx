@@ -652,7 +652,7 @@ function App() {
                 title="让每份资料，都能成为答案"
                 description="上传文档、扫描件和图片，直接提问。每个回答都能回到原始资料。"
                 style={{ alignItems: "center", textAlign: "center" }}
-                styles={{ icon: { height: "auto", marginBottom: 8 }, title: { fontSize: 32, fontWeight: 650 }, description: { maxWidth: 560, color: "#85827b", fontSize: 15, lineHeight: 1.8 } }}
+                styles={{ icon: { height: "auto", marginBottom: 12 }, title: { fontSize: "clamp(28px, 3vw, 38px)", fontWeight: 650, letterSpacing: "-0.035em" }, description: { maxWidth: 600, color: "#858793", fontSize: 16, lineHeight: 1.8 } }}
               />
             </div>
           ) : (
@@ -875,7 +875,7 @@ function makeBubbleItem(message) {
     placement: isUser ? "end" : "start",
     variant: "filled",
     shape: isUser ? "corner" : "default",
-    styles: { content: { background: isUser ? "#f0effa" : "#f7f7f9", paddingInline: 16, paddingBlock: 12, fontSize: 16, lineHeight: 1.85 } },
+    styles: { content: { background: isUser ? "#f4f4f7" : "transparent", paddingInline: isUser ? 18 : 0, paddingBlock: isUser ? 13 : 0, fontSize: 16, lineHeight: 1.85 } },
     avatar: <div className={`message-avatar ${isUser ? "user-avatar" : "assistant-avatar"}`}>{isUser ? "我" : <span className="brand-symbol"><i /><i /><i /></span>}</div>,
     header: !isUser && <div className="message-author">库解{message.pending && <span className="pending-label"><i />{message.status || "正在处理，请稍候…"}</span>}</div>,
     content: <MessageContent message={message} />,
