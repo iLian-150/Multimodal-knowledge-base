@@ -1,15 +1,18 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Bubble from "@ant-design/x/es/bubble/index.js";
 import Conversations from "@ant-design/x/es/conversations/index.js";
+import Prompts from "@ant-design/x/es/prompts/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
+import Welcome from "@ant-design/x/es/welcome/index.js";
+import { EditOutlined, FileTextOutlined, PictureOutlined, SearchOutlined } from "@ant-design/icons";
 import Button from "antd/es/button";
 import Dropdown from "antd/es/dropdown";
 import Input from "antd/es/input";
+import Modal from "antd/es/modal";
 import "./iconfont.css";
 
 const MarkdownRenderer = lazy(() => import("./MarkdownRenderer.jsx"));
 const ConfidenceSlider = lazy(() => import("antd/es/slider"));
-const DeferredModal = lazy(() => import("antd/es/modal"));
 const DeferredProgress = lazy(() => import("antd/es/progress"));
 const DeferredSpin = lazy(() => import("antd/es/spin"));
 
@@ -24,10 +27,10 @@ const RERANK_RULES_KEY = "zhixu-rag-rerank-rules-v1";
 const HALLUCINATION_THRESHOLD_KEY = "zhixu-rag-hallucination-threshold-v1";
 const ACCEPTED_FILES = ".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff";
 const SUGGESTIONS = [
-  { icon: "▤", title: "总结资料", text: "帮我提炼这批资料的核心知识点" },
-  { icon: "⌕", title: "查找细节", text: "资料中关于主要概念的解释是什么？" },
-  { icon: "✎", title: "生成练习", text: "根据已上传的资料生成几道复习题" },
-  { icon: "▧", title: "理解图表", text: "解释资料里的图表和图片表达了什么" },
+  { icon: <FileTextOutlined />, title: "总结资料", text: "帮我提炼这批资料的核心知识点" },
+  { icon: <SearchOutlined />, title: "查找细节", text: "资料中关于主要概念的解释是什么？" },
+  { icon: <EditOutlined />, title: "生成练习", text: "根据已上传的资料生成几道复习题" },
+  { icon: <PictureOutlined />, title: "理解图表", text: "解释资料里的图表和图片表达了什么" },
 ];
 
 function Icon({ name, className = "" }) {
@@ -650,13 +653,26 @@ function App() {
         <section className={`conversation-stage ${visibleMessages.length ? "has-messages" : ""}`}>
           {visibleMessages.length === 0 ? (
             <div className="welcome-view">
-              <div className="welcome-mark"><span className="brand-symbol"><i /><i /><i /></span></div>
-              <div className="welcome-kicker">你的多模态学习空间</div>
-              <h1>让每份资料，都能成为答案</h1>
-              <p className="welcome-subtitle">上传文档、扫描件和图片，直接提问。每个回答都能回到原始资料。</p>
-              <div className="welcome-cards">
-                {SUGGESTIONS.map((item) => <Button key={item.title} className="suggestion-card" onClick={() => { setQuestion(item.text); focusComposer(); }}><span className="suggestion-icon">{item.icon}</span><span className="suggestion-copy"><b>{item.title}</b><small>{item.text}</small></span><span className="suggestion-arrow">↗</span></Button>)}
-              </div>
+              <Welcome
+                variant="borderless"
+                icon={<span className="brand-symbol"><i /><i /><i /></span>}
+                title="让每份资料，都能成为答案"
+                description="上传文档、扫描件和图片，直接提问。每个回答都能回到原始资料。"
+                style={{ alignItems: "center", textAlign: "center" }}
+                styles={{ icon: { height: "auto", marginBottom: 8 }, title: { fontSize: 32, fontWeight: 650 }, description: { maxWidth: 560, color: "#85827b", fontSize: 15, lineHeight: 1.8 } }}
+              />
+              <Prompts
+                className="welcome-prompts"
+                items={SUGGESTIONS.map((item) => ({ key: item.title, icon: item.icon, label: item.title, description: item.text }))}
+                onItemClick={({ data }) => {
+                  const suggestion = SUGGESTIONS.find((item) => item.title === data.key);
+                  if (suggestion) {
+                    setQuestion(suggestion.text);
+                    focusComposer();
+                  }
+                }}
+                styles={{ list: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", overflow: "visible" }, item: { minHeight: 68 } }}
+              />
             </div>
           ) : (
             <>
@@ -696,8 +712,7 @@ function App() {
         </div>
       </main>
 
-      <Suspense fallback={null}>
-      {showSettings && <DeferredModal
+      {showSettings && <Modal
         className="library-settings-modal"
         open
         centered
@@ -800,9 +815,9 @@ function App() {
                 <small className="settings-api-help">阈值越低越宽松。设为 0% 时，只要检索到资料，就不会因校验置信度拦截回答；低阈值可能放过依据不足的内容，请核对参考资料。设置仅保存在当前浏览器，并应用于之后的新问题。</small>
               </section>
             </div>
-      </DeferredModal>}
+      </Modal>}
 
-      {workspaceCreateOpen && <DeferredModal
+      {workspaceCreateOpen && <Modal
         className="library-workspace-modal"
         open
         centered
@@ -823,9 +838,9 @@ function App() {
           placeholder="输入工作区域名称"
           aria-label="工作区域名称"
         />
-      </DeferredModal>}
+      </Modal>}
 
-      {deleteConfirmation && <DeferredModal
+      {deleteConfirmation && <Modal
         className="library-confirm-modal"
         open
         centered
@@ -843,8 +858,7 @@ function App() {
             : `确定删除“${deleteConfirmation.title}”吗？删除后无法恢复。`}
           {deleteConfirmation.type === "document" && <><br /><small>此操作无法撤销</small></>}
         </p>}
-      </DeferredModal>}
-      </Suspense>
+      </Modal>}
     </div>
   );
 }
@@ -878,8 +892,9 @@ function makeBubbleItem(message) {
     role: message.role,
     className: `library-chat-bubble ${isUser ? "user-bubble" : "assistant-bubble"} ${message.error ? "message-error" : ""}`,
     placement: isUser ? "end" : "start",
-    variant: isUser ? "filled" : "borderless",
+    variant: "filled",
     shape: isUser ? "corner" : "default",
+    styles: { content: { background: isUser ? "#f0effa" : "#f7f7f9", paddingInline: 16, paddingBlock: 12, fontSize: 16, lineHeight: 1.85 } },
     avatar: <div className={`message-avatar ${isUser ? "user-avatar" : "assistant-avatar"}`}>{isUser ? "我" : <span className="brand-symbol"><i /><i /><i /></span>}</div>,
     header: !isUser && <div className="message-author">库解{message.pending && <span className="pending-label"><i />{message.status || "正在处理，请稍候…"}</span>}</div>,
     content: <MessageContent message={message} />,
@@ -910,4 +925,3 @@ function bytesToBase64(buffer) {
 }
 
 export default App;
-
