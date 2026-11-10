@@ -7,11 +7,11 @@ import Dropdown from "antd/es/dropdown";
 import Input from "antd/es/input";
 import Modal from "antd/es/modal";
 import Progress from "antd/es/progress";
-import Slider from "antd/es/slider";
 import Spin from "antd/es/spin";
 import "./iconfont.css";
 
 const MarkdownRenderer = lazy(() => import("./MarkdownRenderer.jsx"));
+const ConfidenceSlider = lazy(() => import("antd/es/slider"));
 
 const API_DEFAULT = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 const STORAGE_KEY = "zhixu-rag-conversations-v1";
@@ -756,17 +756,19 @@ function App() {
                 <div className="settings-section-heading"><div><h3>答案幻觉校验</h3><p>设置答案通过来源核验所需的最低置信度。</p></div></div>
                 <label className="settings-api-label" htmlFor="hallucination-threshold">最低可信度</label>
                 <div className="threshold-control">
-                  <Slider
-                    className="threshold-range"
-                    id="hallucination-threshold"
-                    min="0"
-                    max="95"
-                    step="5"
-                    value={hallucinationThreshold}
-                    onChange={setHallucinationThreshold}
-                    aria-label="最低可信度"
-                    tooltip={{ formatter: (value) => `${value}%` }}
-                  />
+                  <Suspense fallback={<div className="slider-loading" role="status">加载设置项…</div>}>
+                    <ConfidenceSlider
+                      className="threshold-range"
+                      id="hallucination-threshold"
+                      min="0"
+                      max="95"
+                      step="5"
+                      value={hallucinationThreshold}
+                      onChange={setHallucinationThreshold}
+                      aria-label="最低可信度"
+                      tooltip={{ formatter: (value) => `${value}%` }}
+                    />
+                  </Suspense>
                   <strong className="threshold-value">{hallucinationThreshold}%</strong>
                 </div>
                 <div className="threshold-scale"><span>宽松</span><span>严格</span></div>
