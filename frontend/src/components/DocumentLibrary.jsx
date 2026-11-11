@@ -26,8 +26,6 @@ export default function DocumentLibrary({ open, apiBase, workspaceId, reloadToke
   const [documents, setDocuments] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingDocuments, setLoadingDocuments] = useState(false);
-  const [preview, setPreview] = useState(null);
-  const [loadingSource, setLoadingSource] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -54,39 +52,30 @@ export default function DocumentLibrary({ open, apiBase, workspaceId, reloadToke
 
   useEffect(() => {
     if (!open) {
-      setPreview(null);
       setError("");
-      setLoadingSource("");
       setSearchQuery("");
     }
   }, [open, workspaceId]);
 
-  async function viewDocument(document) {
-    setLoadingSource(document.source);
-    setError("");
-    try {
-      const query = new URLSearchParams({ source: document.source, workspace_id: workspaceId });
-      const response = await fetch(makeApiUrl(apiBase, `/kb/documents/content?${query}`));
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload?.detail || `读取失败（${response.status}）`);
-      setPreview(payload);
-    } catch (requestError) {
-      setError(requestError.message || "读取文档失败");
-    } finally {
-      setLoadingSource("");
-    }
-  }
-
-  function downloadDocument(source) {
+  function openDocument(source, path) {
     const query = new URLSearchParams({ source, workspace_id: workspaceId });
     const link = document.createElement("a");
-    link.href = makeApiUrl(apiBase, `/kb/documents/download?${query}`);
+    link.href = makeApiUrl(apiBase, `${path}?${query}`);
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     document.body.appendChild(link);
     link.click();
     link.remove();
   }
+
+  function previewDocument(source) {
+    openDocument(source, "/kb/documents/preview");
+  }
+
+  function downloadDocument(source) {
+    openDocument(source, "/kb/documents/download");
+  }
+
 
   const filteredDocuments = useMemo(() => {
     const keyword = normalizeFilename(searchQuery.trim());
@@ -129,33 +118,11 @@ export default function DocumentLibrary({ open, apiBase, workspaceId, reloadToke
               <span className="document-library-name" title={item.filename}>{item.filename}</span>
               <small className="document-library-size">{formatFileSize(item.size_bytes)}</small>
               <div className="document-library-actions">
-                <Button type="text" icon={<Eye size={16} />} loading={loadingSource === item.source} onClick={() => void viewDocument(item)}>预览</Button>
+                <Button type="text" icon={<Eye size={16} />} onClick={() => previewDocument(item.source)}>预览</Button>
                 <Button type="text" icon={<Download size={16} />} onClick={() => downloadDocument(item.source)}>下载</Button>
               </div>
             </div>
           )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={searchQuery.trim() ? "没有找到匹配文件名的文档" : "还没有已上传的文档"} />}
       </div>
     </Modal>
-
-    <Modal
-      className="document-preview-modal"
-      open={Boolean(preview)}
-      title={preview?.filename || "文档预览"}
-      centered
-      width={900}
-      footer={[
-        <Button key="close" onClick={() => setPreview(null)}>关闭</Button>,
-        <Button key="download" type="primary" icon={<Download size={16} />} onClick={() => downloadDocument(preview?.source)}>下载</Button>,
-      ]}
-      onCancel={() => setPreview(null)}
-      destroyOnHidden
-    >
-      {preview && <>
-        {preview.truncated && <div className="document-library-truncated-note">文档较长，预览显示前 15 万字。</div>}
-        <div className="document-preview-body">{preview.content
-          ? <pre>{preview.content}</pre>
-          : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有可预览的文本内容" />}</div>
-      </>}
-    </Modal>
-  </>;
-}
+  </>;}

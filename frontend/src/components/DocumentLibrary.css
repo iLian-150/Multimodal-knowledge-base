@@ -39,11 +39,6 @@
   min-height: 150px;
   place-items: center;
 }
-.document-library-truncated-note {
-  margin-bottom: 12px;
-  color: #858a95;
-  font-size: 12px;
-}
 .document-library-list {
   max-height: min(56vh, 520px);
   overflow: auto;
@@ -80,22 +75,6 @@
   margin-bottom: 10px;
   color: #c0392b;
   font-size: 13px;
-}
-.document-preview-body {
-  max-height: min(62vh, 650px);
-  overflow: auto;
-  border: 1px solid #eceef2;
-  border-radius: 10px;
-  background: #fafbfc;
-}
-.document-preview-body pre {
-  margin: 0;
-  padding: 18px;
-  color: #343841;
-  font: inherit;
-  line-height: 1.75;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 @media (max-width: 560px) {
   .document-library-toolbar {

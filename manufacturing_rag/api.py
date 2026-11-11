@@ -1667,6 +1667,22 @@ def create_app(initial_chunks: Optional[Iterable[DocumentChunk]] = None, config:
     ) -> Dict[str, Any]:
         return kb_state.document_content(source, workspace_id, max_chars)
 
+    @app.get("/kb/documents/preview")
+    def preview_document(source: str, workspace_id: str = DEFAULT_WORKSPACE_ID) -> FileResponse:
+        original_path = stored_document_path(workspace_id, source)
+        if not original_path.is_file():
+            raise HTTPException(status_code=404, detail="原始文档不存在，请重新上传后预览")
+
+        filename = stored_document_filename(workspace_id, source)
+        return FileResponse(
+            original_path,
+            media_type=mimetypes.guess_type(filename)[0] or "application/octet-stream",
+            headers={
+                "Content-Disposition": f"inline; filename*=UTF-8''{quote(filename)}",
+                "X-Original-Document": "true",
+            },
+        )
+
     @app.get("/kb/documents/download")
     def download_document(source: str, workspace_id: str = DEFAULT_WORKSPACE_ID) -> Response:
         document = kb_state.document_content(source, workspace_id, max_chars=0)
