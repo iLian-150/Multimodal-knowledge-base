@@ -22,8 +22,8 @@ from manufacturing_rag.schemas import (
     SourceRef,
 )
 
-SESSION_MEMORY_TURNS = 20
-SESSION_MEMORY_MAX_SESSIONS = 500
+SESSION_MEMORY_TURNS = 8
+SESSION_MEMORY_MAX_SESSIONS = 200
 SESSION_MEMORY_TTL_CAP_SECONDS = 3600
 SESSION_CONTEXT_MAX_CHARS = 4000
 
@@ -137,6 +137,7 @@ class RuntimeInfrastructure:
                 for row in rows
             ]
             self._session_memory[session_key] = (now + ttl, turns[-SESSION_MEMORY_TURNS:])
+            self._session_memory.move_to_end(session_key)
             while len(self._session_memory) > SESSION_MEMORY_MAX_SESSIONS:
                 self._session_memory.popitem(last=False)
 
