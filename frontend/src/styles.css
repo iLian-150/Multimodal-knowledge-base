@@ -168,8 +168,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .drop-overlay small { color: #9294a0; font-size: 12px; }
 .mobile-scrim { display: none; }
 
-.library-settings-modal.ant-modal { max-width: calc(100vw - 32px); max-height: calc(100dvh - 40px); margin-block: 20px; }
-.library-settings-modal .ant-modal-content { display: flex; flex-direction: column; width: 100%; height: min(820px, calc(100dvh - 40px)); max-height: calc(100dvh - 40px); overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 24px 70px #20212a2b; }
+.library-settings-modal.ant-modal { width: min(820px, calc(100vw - 32px), calc(100dvh - 40px)) !important; max-width: min(820px, calc(100vw - 32px), calc(100dvh - 40px)); max-height: calc(100dvh - 40px); margin-block: 20px; }
+.library-settings-modal .ant-modal-content { display: flex; flex-direction: column; width: 100%; height: min(820px, calc(100vw - 32px), calc(100dvh - 40px)); max-height: calc(100dvh - 40px); overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 24px 70px #20212a2b; }
 .library-settings-modal .ant-modal-header { flex: 0 0 auto; margin: 0; padding: 20px 24px; border-bottom: 1px solid #f0f0f3; }
 .library-settings-modal .ant-modal-title { font-size: 17px; }
 .library-settings-modal .ant-modal-close { top: 16px; inset-inline-end: 17px; width: 34px; height: 34px; }
@@ -190,11 +190,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .settings-stats > div { display: flex; align-items: baseline; gap: 8px; padding: 12px; border-radius: 11px; background: #f5f2f9; }
 .settings-stats strong { color: var(--accent); font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .settings-stats span, .settings-api-help { color: #898b96; font-size: 12px; }
-.managed-document-list { display: grid; max-height: 250px; gap: 3px; overflow-y: auto; }
-.managed-document { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; min-height: 40px; gap: 8px; padding: 5px 8px; border-radius: 9px; }
+.managed-document-list { display: grid; gap: 3px; padding-bottom: 2px; }
+.managed-document { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: start; min-height: 40px; gap: 8px; padding: 7px 8px; border-radius: 9px; }
 .managed-document:hover { background: #fdfbff; }
-.managed-document-icon { color: #8582c6; font-size: 15px; }
-.managed-document-name { overflow: hidden; color: #5e606b; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.managed-document-icon { padding-top: 2px; color: #8582c6; font-size: 15px; }
+.managed-document-name { min-width: 0; color: #5e606b; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; white-space: normal; }
 .managed-document-delete.ant-btn { min-width: 48px; height: 30px; border-radius: 8px; font-size: 13px; }
 .managed-documents-empty { padding: 22px 12px; border: 1px dashed #e3e3ea; border-radius: 11px; color: #999ba4; font-size: 13px; text-align: center; }
 .settings-documents-error { border-color: #f0d0cc; background: #fdf8f7; color: #a64e47; }
@@ -251,7 +251,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
   .message-list .ant-bubble.user-bubble .ant-bubble-body { max-width: 92%; }
   .composer-zone { width: calc(100% - 24px); padding: 8px 0 max(10px, env(safe-area-inset-bottom)); }
   .chat-sender.ant-sender { min-height: 60px; padding: 9px 10px; border-radius: 19px; }
-  .library-settings-modal.ant-modal { max-width: calc(100vw - 24px); margin-block: 12px; }
+  .library-settings-modal.ant-modal { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px); margin-block: 12px; }
   .library-settings-modal .ant-modal-content { height: calc(100dvh - 24px); max-height: calc(100dvh - 24px); border-radius: 16px; }
   .library-settings-modal .ant-modal-header { padding: 16px; }
   .library-settings-modal .ant-modal-body { padding: 0 12px 12px; }
