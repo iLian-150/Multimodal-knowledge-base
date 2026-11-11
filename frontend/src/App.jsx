@@ -623,6 +623,16 @@ function App() {
             value={question}
             onChange={setQuestion}
             onSubmit={(text) => void submitQuestion(null, text)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              const nativeEvent = event.nativeEvent;
+              if (nativeEvent.isComposing || nativeEvent.keyCode === 229) return false;
+              if (event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey) return;
+              if (event.shiftKey || event.altKey || event.metaKey || event.ctrlKey) return;
+              event.preventDefault();
+              void submitQuestion(null, event.currentTarget.value);
+              return false;
+            }}
             onPasteFile={(files) => uploadFiles(files)}
             placeholder="向你的知识库提问…"
             submitType="enter"
