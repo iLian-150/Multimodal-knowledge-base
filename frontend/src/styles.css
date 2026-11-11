@@ -82,8 +82,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .assistant-avatar .brand-symbol i { width: 2px; }
 .user-avatar { border: 1px solid var(--line); background: #f5f2f9; color: var(--muted); font-size: 11px; }
 .message-author { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #565864; font-size: 13px; font-weight: 600; }
-.pending-label { display: inline-flex; align-items: center; gap: 6px; color: #8b8d98; font-size: 12px; font-weight: 400; }
-.pending-label i { width: 7px; height: 7px; border: 1.5px solid #d8d7e9; border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+.assistant-thinking { display: inline-flex; max-width: min(100%, 400px); align-items: center; gap: 8px; margin-top: 2px; padding: 7px 11px; border: 1px solid #e8e0f4; border-radius: 12px; background: #fff; box-shadow: 0 3px 12px #2525380d; color: var(--muted); font-size: 12px; line-height: 1.55; white-space: normal; overflow-wrap: anywhere; animation: fade-in .2s ease both; }
+.assistant-thinking i { flex: 0 0 13px; width: 13px; height: 13px; border: 1.5px solid #d8d7e9; border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 .library-chat-bubble { max-width: 100%; }
 .library-chat-bubble .ant-bubble-header { min-height: 24px; margin-bottom: 7px; }
 .message-text { color: #343640; font-size: 16px; line-height: 1.85; overflow-wrap: anywhere; white-space: pre-wrap; }
