@@ -8,7 +8,7 @@ import Empty from "antd/es/empty";
 import Input from "antd/es/input";
 import Modal from "antd/es/modal";
 import Tooltip from "antd/es/tooltip";
-import { BookOpenText, ChevronsUpDown, LibraryBig, MessageSquare, MoreHorizontal, FolderOpen, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, Settings2, SquarePen, Trash2, X } from "lucide-react";
+import { ChevronsUpDown, LibraryBig, MessageSquare, MoreHorizontal, FolderOpen, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, Settings2, SquarePen, Trash2, X } from "lucide-react";
 import styles from "./Sidebar.module.css";
 
 const iconProps = { size: 18, strokeWidth: 1.75, "aria-hidden": true };
@@ -27,7 +27,7 @@ const sidebarTheme = {
 
 const normalize = (value) => String(value || "").normalize("NFKC").toLocaleLowerCase();
 
-export default function Sidebar({ conversations, activeId, busy, collapsed, onToggleCollapsed, mobileOpen, onCloseMobile, onNewChat, onSelectConversation, onRenameConversation, onDeleteConversation, workspaces, activeWorkspaceId, onSelectWorkspace, onCreateWorkspace, onOpenSettings, onOpenDocuments }) {
+export default function Sidebar({ conversations, activeId, busy, collapsed, onToggleCollapsed, mobileOpen, onCloseMobile, onNewChat, onSelectConversation, onRenameConversation, onDeleteConversation, workspaces, activeWorkspaceId, onSelectWorkspace, onCreateWorkspace, onOpenSettings, onOpenDocuments, workspaceDeleting, defaultWorkspaceId, onDeleteWorkspace }) {
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 700px)").matches);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -116,8 +116,7 @@ export default function Sidebar({ conversations, activeId, busy, collapsed, onTo
   const navigation = <aside className={`${styles.sidebar} ${rail ? styles.rail : ""}`} aria-label="主导航">
     <div className={styles.header}>
       {!rail && <button className={styles.brand} onClick={onNewChat} disabled={busy} aria-label="库解，开始新对话">
-        <span className={styles.brandMark}><BookOpenText size={20} strokeWidth={1.8} aria-hidden /></span>
-        <span>库解</span>
+        <img className={styles.brandLogo} src="/logo.png" alt="" aria-hidden="true" />
       </button>}
       <Tooltip title={mobile ? "关闭侧栏" : rail ? "展开侧栏" : "收起侧栏"} placement="right">
         <Button type="text" className={styles.iconButton} aria-label={mobile ? "关闭侧栏" : rail ? "展开侧栏" : "收起侧栏"} onClick={mobile ? onCloseMobile : onToggleCollapsed} icon={mobile ? <X {...iconProps} /> : rail ? <PanelLeftOpen {...iconProps} /> : <PanelLeftClose {...iconProps} />} />
@@ -161,7 +160,27 @@ export default function Sidebar({ conversations, activeId, busy, collapsed, onTo
         selectedKeys: [activeWorkspaceId],
         items: [
           { key: "heading", label: "切换工作区域", disabled: true },
-          ...workspaces.map((item) => ({ key: item.id, label: item.name, icon: <LibraryBig size={16} /> })),
+          ...workspaces.map((item) => ({
+            key: item.id,
+            label: <div className={styles.workspaceMenuItem}>
+              <span className={styles.workspaceMenuName}>{item.name}</span>
+              {item.id !== defaultWorkspaceId && <Button
+                type="text"
+                size="small"
+                className={styles.workspaceMenuDelete}
+                aria-label={`删除工作区：${item.name}`}
+                title={`删除工作区：${item.name}`}
+                icon={<Trash2 size={14} />}
+                disabled={busy || workspaceDeleting}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onDeleteWorkspace(item.id);
+                }}
+              />}
+            </div>,
+            icon: <LibraryBig size={16} />,
+          })),
           { type: "divider" },
           { key: "create", label: "新建工作区域", icon: <Plus size={16} /> },
         ],

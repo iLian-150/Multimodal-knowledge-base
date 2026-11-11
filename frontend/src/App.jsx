@@ -182,6 +182,7 @@ function App() {
   const [status, setStatus] = useState({ kind: "idle", text: "" });
   const [uploadProgress, setUploadProgress] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [workspaceDeleting, setWorkspaceDeleting] = useState(false);
   const [documentListVersion, setDocumentListVersion] = useState(0);
   const [isConversationScrolling, setIsConversationScrolling] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -370,6 +371,50 @@ function App() {
     selectWorkspace(workspace.id);
   }
 
+  function requestWorkspaceDelete(workspaceId) {
+    if (!workspaceId || workspaceId === DEFAULT_WORKSPACE_ID || busy || workspaceDeleting) return;
+    const workspace = workspaces.find((item) => item.id === workspaceId);
+    if (workspace) setDeleteConfirmation({ type: "workspace", workspaceId, title: workspace.name });
+  }
+
+  async function executeWorkspaceDelete(workspaceId) {
+    const workspace = workspaces.find((item) => item.id === workspaceId);
+    if (!workspace || workspaceId === DEFAULT_WORKSPACE_ID || busy) return;
+
+    setWorkspaceDeleting(true);
+    setBusy(true);
+    setStatus({ kind: "working", text: `正在删除“${workspace.name}”…` });
+    try {
+      await fetch(joinApi(apiBase, `/workspaces/${encodeURIComponent(workspaceId)}`), {
+        method: "DELETE",
+      }).then(parseResponse);
+
+      setWorkspaces((items) => items.filter((item) => item.id !== workspaceId));
+      setConversations((items) => items.filter((item) => item.workspaceId !== workspaceId));
+      try {
+        const selected = JSON.parse(localStorage.getItem(ACTIVE_CONVERSATIONS_KEY) || "{}");
+        delete selected[workspaceId];
+        localStorage.setItem(ACTIVE_CONVERSATIONS_KEY, JSON.stringify(selected));
+      } catch {
+        localStorage.removeItem(ACTIVE_CONVERSATIONS_KEY);
+      }
+
+      if (activeWorkspaceId === workspaceId) {
+        summaryRequestRef.current += 1;
+        setActiveWorkspaceId(DEFAULT_WORKSPACE_ID);
+        setActiveId(readActiveConversationId(DEFAULT_WORKSPACE_ID));
+        setSummary(null);
+        setQuestion("");
+      }
+      setStatus({ kind: "success", text: `“${workspace.name}”已删除` });
+    } catch (error) {
+      setStatus({ kind: "error", text: error.message || "工作区删除失败，请稍后重试" });
+    } finally {
+      setBusy(false);
+      setWorkspaceDeleting(false);
+    }
+  }
+
   function openDocuments() {
     setShowDocuments(true);
     setMobileNav(false);
@@ -415,6 +460,7 @@ function App() {
     const confirmation = deleteConfirmation;
     setDeleteConfirmation(null);
     if (confirmation.type === "conversation") removeConversation(confirmation.conversationId);
+    else if (confirmation.type === "workspace") void executeWorkspaceDelete(confirmation.workspaceId);
     else void executeDocumentDelete(confirmation.source, confirmation.workspaceId);
   }
 
@@ -596,6 +642,9 @@ function App() {
         onCreateWorkspace={() => { setWorkspaceName(""); setWorkspaceCreateOpen(true); setMobileNav(false); }}
         onOpenSettings={openSettings}
         onOpenDocuments={openDocuments}
+        workspaceDeleting={workspaceDeleting}
+        defaultWorkspaceId={DEFAULT_WORKSPACE_ID}
+        onDeleteWorkspace={requestWorkspaceDelete}
       />
 
       <main className="main-panel">
@@ -807,7 +856,7 @@ function App() {
         open
         centered
         width={460}
-        title={deleteConfirmation?.type === "document" ? "删除这份资料？" : "删除这段对话？"}
+        title={deleteConfirmation?.type === "workspace" ? "删除这个工作区？" : deleteConfirmation?.type === "document" ? "删除这份资料？" : "删除这段对话？"}
         onCancel={() => setDeleteConfirmation(null)}
         footer={[
           <Button key="cancel" onClick={() => setDeleteConfirmation(null)}>取消</Button>,
@@ -815,10 +864,12 @@ function App() {
         ]}
       >
         {deleteConfirmation && <p className="confirm-dialog-description">
-          {deleteConfirmation.type === "document"
-            ? `将从知识库删除“${deleteConfirmation.title}”，对应的知识片段和向量索引也会一起删除。`
-            : `确定删除“${deleteConfirmation.title}”吗？删除后无法恢复。`}
-          {deleteConfirmation.type === "document" && <><br /><small>此操作无法撤销</small></>}
+          {deleteConfirmation.type === "workspace"
+            ? `将删除“${deleteConfirmation.title}”及其全部会话、原始文档和向量索引，此操作不可撤销。`
+            : deleteConfirmation.type === "document"
+              ? `将从知识库删除“${deleteConfirmation.title}”，对应的知识片段和向量索引也会一起删除。`
+              : `确定删除“${deleteConfirmation.title}”吗？删除后无法恢复。`}
+          {deleteConfirmation.type !== "workspace" && deleteConfirmation.type === "document" && <><br /><small>此操作无法撤销</small></>}
         </p>}
       </Modal>}
     </div>

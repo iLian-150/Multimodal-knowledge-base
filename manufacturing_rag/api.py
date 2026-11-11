@@ -526,6 +526,59 @@ class KnowledgeBaseState:
                 "truncated": truncated,
             }
 
+    def workspace_chunk_ids(self, workspace_id: str) -> List[str]:
+        with self._lock:
+            return [
+                chunk.id for chunk in self._chunks
+                if self._chunk_workspace_id(chunk) == workspace_id
+            ]
+
+    def delete_workspace(self, workspace_id: str) -> Dict[str, Any]:
+        if workspace_id == DEFAULT_WORKSPACE_ID:
+            raise HTTPException(status_code=400, detail="默认工作区不能删除")
+
+        workspace_key = hashlib.sha256(workspace_id.encode("utf-8")).hexdigest()[:24]
+        workspace_dir = DOCUMENT_FILES_DIR / workspace_key
+        with self._lock:
+            removed = [chunk for chunk in self._chunks if self._chunk_workspace_id(chunk) == workspace_id]
+            removed_chunk_count = len(removed)
+            removed_document_count = 0
+
+            try:
+                if workspace_dir.is_symlink():
+                    workspace_dir.unlink(missing_ok=True)
+                elif workspace_dir.is_dir():
+                    stored_files = list(workspace_dir.iterdir())
+                    removed_document_count = sum(1 for path in stored_files if path.suffix == ".json")
+                    for path in stored_files:
+                        if path.is_file() or path.is_symlink():
+                            path.unlink(missing_ok=True)
+                        else:
+                            raise OSError("unexpected directory in workspace document store")
+                    workspace_dir.rmdir()
+            except OSError as exc:
+                raise HTTPException(status_code=500, detail="无法清理工作区中的原始文档") from exc
+
+            self._chunks = [
+                chunk for chunk in self._chunks
+                if self._chunk_workspace_id(chunk) != workspace_id
+            ]
+            self._version += 1
+            self._persist_runtime_chunks_locked()
+            self._invalidate_workspace_pipelines_locked()
+            write_debug_log(
+                self._config,
+                "kb_workspace_deleted",
+                workspace_id=workspace_id,
+                deleted_chunk_count=removed_chunk_count,
+                deleted_document_count=removed_document_count,
+            )
+            return {
+                "workspace_id": workspace_id,
+                "removed_chunk_count": removed_chunk_count,
+                "removed_document_count": removed_document_count,
+            }
+
     def delete_document(
         self,
         source: str,
@@ -1349,9 +1402,10 @@ def create_app(initial_chunks: Optional[Iterable[DocumentChunk]] = None, config:
     )
     app.state.kb = kb_state
     app.state.document_delete_jobs = document_delete_jobs
+    cors_origins = parse_cors_origins()
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=parse_cors_origins(),
+        allow_origins=cors_origins,
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -1359,23 +1413,26 @@ def create_app(initial_chunks: Optional[Iterable[DocumentChunk]] = None, config:
 
     @app.middleware("http")
     async def preserve_error_reason_for_browser(request: Request, call_next):
-        """Keep unexpected failures readable by cross-origin browser clients."""
+        """Keep API errors readable by browsers from configured frontend origins."""
 
         try:
-            return await call_next(request)
+            response = await call_next(request)
         except Exception as exc:  # noqa: BLE001 - final API safety net.
             error = explain_api_error(exc, 500, type(exc).__name__)
             write_debug_log(config, "unhandled_api_error", error_type=type(exc).__name__, error=error["technical_detail"])
-            origin = request.headers.get("origin", "*")
-            headers = {
-                "Access-Control-Allow-Origin": origin if origin else "*",
-                "Vary": "Origin",
-            }
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=500,
                 content={"detail": f"原因：{error['reason']} 处理建议：{error['suggestion']}", "error": error},
-                headers=headers,
             )
+
+        origin = request.headers.get("origin", "")
+        if origin and (origin in cors_origins or "*" in cors_origins):
+            allowed_origin = "*" if "*" in cors_origins else origin
+            response.headers.setdefault("Access-Control-Allow-Origin", allowed_origin)
+            vary = response.headers.get("Vary", "")
+            if "origin" not in {part.strip().lower() for part in vary.split(",")}:
+                response.headers["Vary"] = f"{vary}, Origin" if vary else "Origin"
+        return response
 
     @app.exception_handler(HTTPException)
     async def explain_http_exception(_request: Request, exc: HTTPException) -> JSONResponse:
@@ -1570,6 +1627,33 @@ def create_app(initial_chunks: Optional[Iterable[DocumentChunk]] = None, config:
     @app.get("/kb/summary", response_model=KnowledgeBaseSummary)
     def kb_summary(workspace_id: str = DEFAULT_WORKSPACE_ID) -> KnowledgeBaseSummary:
         return kb_state.summary(workspace_id)
+
+    @app.delete("/workspaces/{workspace_id}")
+    def delete_workspace(workspace_id: str) -> Dict[str, Any]:
+        if not workspace_id or len(workspace_id) > 128:
+            raise HTTPException(status_code=400, detail="工作区 ID 无效")
+        if workspace_id == DEFAULT_WORKSPACE_ID:
+            raise HTTPException(status_code=400, detail="默认工作区不能删除")
+
+        chunk_ids = kb_state.workspace_chunk_ids(workspace_id)
+        if chunk_ids and config.vector_store_provider != "memory":
+            try:
+                vector_store = MilvusVectorStore(config=config, embedding=HashEmbeddingAdapter(config))
+                vector_store.delete_chunk_ids(chunk_ids)
+            except Exception as exc:  # noqa: BLE001 - retain workspace data if vector cleanup fails.
+                write_debug_log(
+                    config,
+                    "workspace_delete_vector_error",
+                    workspace_id=workspace_id,
+                    error_type=type(exc).__name__,
+                    error=sanitize_error_detail(str(exc)),
+                )
+                raise HTTPException(
+                    status_code=503,
+                    detail="工作区向量索引删除失败，请检查向量数据库连接后重试",
+                ) from exc
+
+        return kb_state.delete_workspace(workspace_id)
 
     @app.get("/kb/documents")
     def list_uploaded_documents(workspace_id: str = DEFAULT_WORKSPACE_ID) -> Dict[str, Any]:
