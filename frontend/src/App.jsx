@@ -3,7 +3,7 @@ import Bubble from "@ant-design/x/es/bubble/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
 import Welcome from "@ant-design/x/es/welcome/index.js";
 import { DeleteOutlined, PaperClipOutlined, SettingOutlined, UploadOutlined, SendOutlined } from "@ant-design/icons";
-import { PanelLeft } from "lucide-react";
+import { ChevronRight, LibraryBig, PanelLeft } from "lucide-react";
 import Button from "antd/es/button";
 import Input from "antd/es/input";
 import Modal from "antd/es/modal";
@@ -214,6 +214,7 @@ function App() {
     () => conversations.find((item) => item.id === activeId && item.workspaceId === activeWorkspaceId) || null,
     [conversations, activeId, activeWorkspaceId],
   );
+  const activeWorkspaceName = workspaces.find((item) => item.id === activeWorkspaceId)?.name || DEFAULT_WORKSPACE.name;
   const messages = activeConversation?.messages || [];
   const visibleMessages = messages.filter((message) => !message.fileProgress);
 
@@ -650,6 +651,15 @@ function App() {
       <main className="main-panel">
         <header className="topbar">
           <Button className="mobile-menu" type="text" aria-label="打开侧栏" icon={<PanelLeft size={20} strokeWidth={1.75} />} onClick={() => setMobileNav(true)} />
+          <div className="topbar-path" aria-label={`${activeWorkspaceName} / ${showDocuments ? "文档资料" : activeConversation?.title || "问答工作台"}`}>
+            <LibraryBig size={17} strokeWidth={1.8} aria-hidden="true" />
+            <span>{activeWorkspaceName}</span>
+            <ChevronRight size={15} strokeWidth={1.7} aria-hidden="true" />
+            <strong>{showDocuments ? "文档资料" : activeConversation?.title || "问答工作台"}</strong>
+          </div>
+          <Button type="text" className="topbar-action" icon={<UploadOutlined />} onClick={() => fileInput.current?.click()}>
+            <span>添加资料</span>
+          </Button>
         </header>
 
         <input ref={fileInput} type="file" className="visually-hidden" multiple accept={ACCEPTED_FILES} onChange={(event) => uploadFiles(event.target.files)} />
@@ -664,7 +674,7 @@ function App() {
                 title="让每份资料，都能成为答案"
                 description="上传文档、扫描件和图片，直接提问。每个回答都能回到原始资料。"
                 style={{ alignItems: "center", textAlign: "center" }}
-                styles={{ icon: { height: "auto", marginBottom: 12 }, title: { fontSize: "clamp(28px, 3vw, 38px)", fontWeight: 650, letterSpacing: "-0.035em" }, description: { maxWidth: 600, color: "#858793", fontSize: 16, lineHeight: 1.8 } }}
+                styles={{ icon: { height: "auto", marginBottom: 12 }, title: { fontSize: "clamp(28px, 3vw, 38px)", fontWeight: 740, letterSpacing: "-0.045em", color: "var(--ink)" }, description: { maxWidth: 600, color: "var(--muted)", fontSize: 15, lineHeight: 1.8 } }}
               />
             </div>
           ) : (
