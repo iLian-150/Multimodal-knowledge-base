@@ -197,6 +197,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .managed-document-name { overflow: hidden; color: #5e606b; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .managed-document-delete.ant-btn { min-width: 48px; height: 30px; border-radius: 8px; font-size: 13px; }
 .managed-documents-empty { padding: 22px 12px; border: 1px dashed #e3e3ea; border-radius: 11px; color: #999ba4; font-size: 13px; text-align: center; }
+.settings-documents-error { border-color: #f0d0cc; background: #fdf8f7; color: #a64e47; }
 .document-delete-progress { display: grid; gap: 8px; margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: #fafafd; }
 .document-delete-progress-label { margin: 0; }
 .document-delete-progress-label > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

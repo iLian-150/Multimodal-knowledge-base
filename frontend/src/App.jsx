@@ -184,6 +184,9 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [workspaceDeleting, setWorkspaceDeleting] = useState(false);
   const [documentListVersion, setDocumentListVersion] = useState(0);
+  const [docs, setDocs] = useState([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [docsError, setDocsError] = useState("");
   const [isConversationScrolling, setIsConversationScrolling] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
@@ -196,6 +199,7 @@ function App() {
   const textInput = useRef(null);
   const scrollArea = useRef(null);
   const summaryRequestRef = useRef(0);
+  const documentsRequestRef = useRef(0);
   const scrollIdleTimerRef = useRef(null);
   const closeMobileNav = useCallback(() => setMobileNav(false), []);
 
@@ -271,6 +275,33 @@ function App() {
     const timer = window.setInterval(refreshStatus, 30000);
     return () => window.clearInterval(timer);
   }, [refreshStatus]);
+
+  async function refreshDocuments() {
+    const requestId = ++documentsRequestRef.current;
+    const api = apiBase.trim();
+    if (!api) {
+      setDocs([]);
+      setDocsError("请先设置后端 API 地址");
+      setDocsLoading(false);
+      return;
+    }
+
+    setDocs([]);
+    setDocsLoading(true);
+    setDocsError("");
+    try {
+      const workspace = encodeURIComponent(activeWorkspaceId);
+      const payload = await fetch(joinApi(api, `/kb/documents?workspace_id=${workspace}`)).then(parseResponse);
+      const documents = Array.isArray(payload.documents) ? payload.documents : [];
+      if (requestId === documentsRequestRef.current) {
+        setDocs(documents.map((document) => (typeof document === "string" ? document : document?.source)).filter(Boolean));
+      }
+    } catch (error) {
+      if (requestId === documentsRequestRef.current) setDocsError(error.message || "读取资料列表失败，请稍后重试");
+    } finally {
+      if (requestId === documentsRequestRef.current) setDocsLoading(false);
+    }
+  }
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -427,6 +458,7 @@ function App() {
     setShowSettings(true);
     setMobileNav(false);
     refreshStatus();
+    void refreshDocuments();
   }
 
   async function deleteDocument(source) {
@@ -451,6 +483,8 @@ function App() {
       }
       if (job.status === "failed") throw new Error(job.error || "删除失败，请稍后重试");
       await refreshStatus();
+      await refreshDocuments();
+      setDocumentListVersion((version) => version + 1);
     } catch (error) {
       setDocumentDelete({ source, status: "failed", progress: 0, phase: "删除失败", error: error.message });
     }
@@ -746,7 +780,9 @@ function App() {
                   <div><strong>{docs.length}</strong><span>份资料</span></div>
                   <div><strong>{summary?.chunk_count ?? 0}</strong><span>个知识片段</span></div>
                 </div>
-                {docs.length ? (
+                {docsLoading ? <div className="managed-documents-empty" role="status">正在读取资料列表…</div>
+                  : docsError ? <div className="managed-documents-empty settings-documents-error" role="alert">{docsError}</div>
+                    : docs.length ? (
                   <div className="managed-document-list">
                     {docs.map((source) => (
                       <div className="managed-document" key={source}>
@@ -774,7 +810,7 @@ function App() {
               <section className="settings-section">
                 <div className="settings-section-heading"><div><h3>服务连接</h3><p>设置当前使用的后端 API 地址。</p></div></div>
                 <label className="settings-api-label" htmlFor="api-base">后端 API 地址</label>
-                <Input className="settings-api-input" id="api-base" value={apiBase} onChange={(event) => setApiBase(event.target.value)} onBlur={refreshStatus} spellCheck="false" />
+                <Input className="settings-api-input" id="api-base" value={apiBase} onChange={(event) => setApiBase(event.target.value)} onBlur={() => { refreshStatus(); void refreshDocuments(); }} spellCheck="false" />
                 <small className="settings-api-help">API 密钥保存在后端环境变量中。</small>
               </section>
 
