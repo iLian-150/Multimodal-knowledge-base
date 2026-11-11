@@ -199,7 +199,7 @@ class ManufacturingRAGPipeline:
         contexts = contexts[: self.config.top_k]
         for rank, result in enumerate(contexts, start=1):
             result.rank = rank
-        contexts = filter_low_quality_contexts(question, contexts)
+        contexts = filter_low_quality_contexts(retrieval_question, contexts)
         self.cache_retrieved_contexts(contexts)
         contexts = expand_parent_contexts(contexts)
         write_debug_log(
@@ -212,7 +212,7 @@ class ManufacturingRAGPipeline:
             threshold=self.config.rerank_threshold,
             results=retrieval_results_for_debug(contexts, text_chars=self.config.debug_log_text_chars),
         )
-        sufficient, sufficiency_reason = self.llm_router.assess_context_sufficiency(question, contexts)
+        sufficient, sufficiency_reason = self.llm_router.assess_context_sufficiency(retrieval_question, contexts)
         write_debug_log(
             self.config,
             "context_sufficiency",
@@ -247,9 +247,9 @@ class ManufacturingRAGPipeline:
             on_status("DeepSeek 正在根据资料组织答案…")
         stream_generator = getattr(self.llm_router, "generate_answer_stream", None)
         if on_token and callable(stream_generator):
-            draft = stream_generator(question, contexts, on_token)
+            draft = stream_generator(retrieval_question, contexts, on_token)
         else:
-            draft = self.llm_router.generate_answer(question, contexts)
+            draft = self.llm_router.generate_answer(retrieval_question, contexts)
             if on_token:
                 on_token(draft)
         answer_source = str(getattr(self.llm_router, "last_answer_source", "local_rule"))
@@ -270,7 +270,12 @@ class ManufacturingRAGPipeline:
             try:
                 if on_status:
                     on_status("正在根据核验结果完善答案…")
-                repaired_draft = repair_generator(question, contexts, redacted_answer, hallucination.issues)
+                repaired_draft = repair_generator(
+                    retrieval_question,
+                    contexts,
+                    redacted_answer,
+                    hallucination.issues,
+                )
                 repaired_answer = self.safety_guard.redact(repaired_draft)
                 repaired_safety = self.safety_guard.post_audit(repaired_answer)
                 repaired_check = apply_hallucination_threshold(
@@ -602,12 +607,16 @@ def build_insufficient_follow_up(question: str, contexts, reason: str) -> str:
 
 
 def contextualize_question(question: str, conversation_context: str) -> str:
-    """Resolve short/pronominal follow-ups with the Redis-backed recent session context."""
+    """Resolve short or referential follow-ups with recent session context."""
 
     if not conversation_context:
         return question
     compact = question.strip()
-    needs_context = len(compact) < 18 or any(term in compact for term in ("这个", "它", "上述", "前面", "刚才", "那"))
+    follow_up_markers = (
+        "这个", "这项", "这条", "它", "上述", "前面", "刚才", "那么", "那", "该项", "其中",
+        "还有", "另外", "继续", "展开", "具体说说", "为什么", "怎么改", "如何呢", "第二个", "第一项",
+    )
+    needs_context = len(compact) <= 14 or any(term in compact for term in follow_up_markers)
     if not needs_context:
         return question
     return f"会话上下文：{conversation_context}\n当前问题：{question}"
