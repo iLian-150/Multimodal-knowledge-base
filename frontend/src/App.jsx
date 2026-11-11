@@ -239,7 +239,7 @@ function App() {
       scrollArea.current?.scrollTo({ top: "bottom", behavior: "smooth" });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [activeId]);
+  }, [activeId, activeConversation?.messages]);
 
   const isDeletingDocument = ["queued", "running"].includes(documentDelete?.status);
 
@@ -582,7 +582,7 @@ function App() {
                 ref={scrollArea}
                 className="message-list"
                 items={visibleMessages.map(makeBubbleItem)}
-                autoScroll
+                autoScroll={false}
               />
               {busy && !visibleMessages.some((message) => message.pending) && !uploadProgress && <div className="thinking"><span /><span /><span />正在思考</div>}
             </>
