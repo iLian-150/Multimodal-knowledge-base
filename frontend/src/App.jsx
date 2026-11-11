@@ -182,6 +182,8 @@ function App() {
   const [status, setStatus] = useState({ kind: "idle", text: "" });
   const [uploadProgress, setUploadProgress] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [documentListVersion, setDocumentListVersion] = useState(0);
+  const [isConversationScrolling, setIsConversationScrolling] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true");
@@ -193,7 +195,19 @@ function App() {
   const textInput = useRef(null);
   const scrollArea = useRef(null);
   const summaryRequestRef = useRef(0);
+  const scrollIdleTimerRef = useRef(null);
   const closeMobileNav = useCallback(() => setMobileNav(false), []);
+
+  useEffect(() => () => window.clearTimeout(scrollIdleTimerRef.current), []);
+
+  function handleConversationScroll() {
+    setIsConversationScrolling(true);
+    window.clearTimeout(scrollIdleTimerRef.current);
+    scrollIdleTimerRef.current = window.setTimeout(() => {
+      scrollIdleTimerRef.current = null;
+      setIsConversationScrolling(false);
+    }, 650);
+  }
 
   const activeConversation = useMemo(
     () => conversations.find((item) => item.id === activeId && item.workspaceId === activeWorkspaceId) || null,
@@ -548,6 +562,7 @@ function App() {
     }
     setBusy(false);
     await refreshStatus();
+    setDocumentListVersion((version) => version + 1);
     window.setTimeout(() => {
       setStatus((current) => current.kind === "success" ? { kind: "idle", text: "" } : current);
       setUploadProgress(null);
@@ -561,8 +576,6 @@ function App() {
       .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0)),
     [conversations, activeWorkspaceId],
   );
-  const docs = summary?.sources || [];
-
   return (
     <div className={`app-shell ${sidebarCollapsed && !mobileNav ? "sidebar-collapsed" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }} onDrop={(event) => { event.preventDefault(); setDragging(false); uploadFiles(event.dataTransfer.files); }}>
       <Sidebar
@@ -593,7 +606,7 @@ function App() {
         <input ref={fileInput} type="file" className="visually-hidden" multiple accept={ACCEPTED_FILES} onChange={(event) => uploadFiles(event.target.files)} />
         {dragging && <div className="drop-overlay"><div><UploadOutlined /><strong>松开即可添加资料</strong><small>PDF、Word、PPT、图片与文本</small></div></div>}
 
-        <section className={`conversation-stage ${visibleMessages.length ? "has-messages" : ""}`}>
+        <section className={`conversation-stage ${visibleMessages.length ? "has-messages" : ""} ${isConversationScrolling ? "is-scrolling" : ""}`} onScrollCapture={handleConversationScroll}>
           {visibleMessages.length === 0 ? (
             <div className="welcome-view">
               <Welcome
@@ -783,7 +796,7 @@ function App() {
         open={showDocuments}
         apiBase={apiBase}
         workspaceId={activeWorkspaceId}
-        documents={docs}
+        reloadToken={documentListVersion}
         busy={busy}
         onUpload={() => fileInput.current?.click()}
         onClose={() => setShowDocuments(false)}

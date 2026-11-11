@@ -66,23 +66,52 @@ def stored_document_path(workspace_id: str, source: str) -> Path:
     return DOCUMENT_FILES_DIR / workspace_key / document_key
 
 
-def save_stored_document(workspace_id: str, source: str, content: bytes) -> None:
+def stored_document_metadata_path(workspace_id: str, source: str) -> Path:
+    path = stored_document_path(workspace_id, source)
+    return path.with_name(f"{path.name}.json")
+
+
+def stored_document_filename(workspace_id: str, source: str) -> str:
+    metadata_path = stored_document_metadata_path(workspace_id, source)
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        filename = str(metadata.get("filename") or "")
+        if filename:
+            return safe_document_filename(filename)
+    except (OSError, ValueError, TypeError):
+        pass
+    return safe_document_filename(source)
+
+
+def save_stored_document(workspace_id: str, source: str, filename: str, content: bytes) -> None:
     path = stored_document_path(workspace_id, source)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = path.with_name(f"{path.name}.{uuid4().hex}.tmp")
+    metadata_path = stored_document_metadata_path(workspace_id, source)
+    temporary_metadata_path = metadata_path.with_name(f"{metadata_path.name}.{uuid4().hex}.tmp")
     try:
         temporary_path.write_bytes(content)
         temporary_path.replace(path)
+        temporary_metadata_path.write_text(
+            json.dumps({"filename": safe_document_filename(filename)}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        temporary_metadata_path.replace(metadata_path)
     finally:
         temporary_path.unlink(missing_ok=True)
+        temporary_metadata_path.unlink(missing_ok=True)
 
 
 def remove_stored_document(workspace_id: str, source: str) -> None:
-    try:
-        stored_document_path(workspace_id, source).unlink(missing_ok=True)
-    except OSError:
-        # Knowledge-base deletion should still complete if an old file is already gone.
-        pass
+    for path in (
+        stored_document_path(workspace_id, source),
+        stored_document_metadata_path(workspace_id, source),
+    ):
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            # Knowledge-base deletion should still complete if an old file is already gone.
+            pass
 
 
 def workspace_chunk_id(workspace_id: str, chunk_id: str) -> str:
@@ -444,6 +473,31 @@ class KnowledgeBaseState:
                 if chunk.source == source and self._chunk_workspace_id(chunk) == workspace_id
             ]
 
+    def list_original_documents(self, workspace_id: str = DEFAULT_WORKSPACE_ID) -> Dict[str, Any]:
+        with self._lock:
+            chunk_counts: Dict[str, int] = {}
+            for chunk in self._chunks:
+                if self._chunk_workspace_id(chunk) == workspace_id and chunk.source:
+                    chunk_counts[chunk.source] = chunk_counts.get(chunk.source, 0) + 1
+
+            documents = []
+            for source, chunk_count in chunk_counts.items():
+                path = stored_document_path(workspace_id, source)
+                if not path.is_file():
+                    continue
+                try:
+                    size_bytes = path.stat().st_size
+                except OSError:
+                    continue
+                documents.append({
+                    "source": source,
+                    "filename": stored_document_filename(workspace_id, source),
+                    "size_bytes": size_bytes,
+                    "chunk_count": chunk_count,
+                })
+            documents.sort(key=lambda item: item["filename"].casefold())
+            return {"documents": documents, "count": len(documents), "workspace_id": workspace_id}
+
     def document_content(
         self,
         source: str,
@@ -464,7 +518,7 @@ class KnowledgeBaseState:
                 content = content[:safe_limit]
             return {
                 "source": source,
-                "filename": safe_document_filename(source),
+                "filename": stored_document_filename(workspace_id, source),
                 "content": content,
                 "chunk_count": len(chunks),
                 "original_available": stored_document_path(workspace_id, source).is_file(),
@@ -630,7 +684,7 @@ class KnowledgeBaseState:
             workspace_id=workspace_id,
         )
         document_source = next((chunk.source for chunk in result.chunks if chunk.source), filename)
-        save_stored_document(workspace_id, document_source, content)
+        save_stored_document(workspace_id, document_source, filename, content)
         return response
 
     def _apply_chunks_locked(
@@ -1516,6 +1570,10 @@ def create_app(initial_chunks: Optional[Iterable[DocumentChunk]] = None, config:
     def kb_summary(workspace_id: str = DEFAULT_WORKSPACE_ID) -> KnowledgeBaseSummary:
         return kb_state.summary(workspace_id)
 
+    @app.get("/kb/documents")
+    def list_uploaded_documents(workspace_id: str = DEFAULT_WORKSPACE_ID) -> Dict[str, Any]:
+        return kb_state.list_original_documents(workspace_id)
+
     @app.get("/kb/documents/content")
     def get_document_content(
         source: str,
@@ -1528,7 +1586,7 @@ def create_app(initial_chunks: Optional[Iterable[DocumentChunk]] = None, config:
     def download_document(source: str, workspace_id: str = DEFAULT_WORKSPACE_ID) -> Response:
         document = kb_state.document_content(source, workspace_id, max_chars=0)
         original_path = stored_document_path(workspace_id, source)
-        filename = safe_document_filename(source)
+        filename = stored_document_filename(workspace_id, source)
         if original_path.is_file():
             return FileResponse(
                 original_path,

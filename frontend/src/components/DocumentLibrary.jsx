@@ -1,37 +1,71 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "antd/es/button";
 import Empty from "antd/es/empty";
+import Input from "antd/es/input";
 import Modal from "antd/es/modal";
 import Spin from "antd/es/spin";
-import { Download, Eye, FileText, Upload } from "lucide-react";
+import { Download, Eye, FileText, Search, Upload } from "lucide-react";
 import "./DocumentLibrary.css";
-
-function documentName(source) {
-  return String(source || "").replace(/\\/g, "/").split("/").pop() || String(source || "未命名文档");
-}
 
 function makeApiUrl(apiBase, path) {
   return `${String(apiBase || "").replace(/\/+$/, "")}${path}`;
 }
 
-export default function DocumentLibrary({ open, apiBase, workspaceId, documents = [], busy = false, onUpload, onClose }) {
+function normalizeFilename(value) {
+  return String(value || "").normalize("NFKC").toLocaleLowerCase().replace(/\s+/g, "");
+}
+
+function formatFileSize(bytes) {
+  const size = Number(bytes) || 0;
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export default function DocumentLibrary({ open, apiBase, workspaceId, reloadToken = 0, busy = false, onUpload, onClose }) {
+  const [documents, setDocuments] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [preview, setPreview] = useState(null);
   const [loadingSource, setLoadingSource] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return undefined;
+    let cancelled = false;
+    async function loadDocuments() {
+      setLoadingDocuments(true);
+      setError("");
+      try {
+        const query = new URLSearchParams({ workspace_id: workspaceId });
+        const response = await fetch(makeApiUrl(apiBase, `/kb/documents?${query}`));
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload?.detail || `读取失败（${response.status}）`);
+        if (!cancelled) setDocuments(Array.isArray(payload.documents) ? payload.documents : []);
+      } catch (requestError) {
+        if (!cancelled) setError(requestError.message || "读取文档列表失败");
+      } finally {
+        if (!cancelled) setLoadingDocuments(false);
+      }
+    }
+    void loadDocuments();
+    return () => { cancelled = true; };
+  }, [open, apiBase, workspaceId, reloadToken]);
 
   useEffect(() => {
     if (!open) {
       setPreview(null);
       setError("");
       setLoadingSource("");
+      setSearchQuery("");
     }
   }, [open, workspaceId]);
 
-  async function viewDocument(source) {
-    setLoadingSource(source);
+  async function viewDocument(document) {
+    setLoadingSource(document.source);
     setError("");
     try {
-      const query = new URLSearchParams({ source, workspace_id: workspaceId });
+      const query = new URLSearchParams({ source: document.source, workspace_id: workspaceId });
       const response = await fetch(makeApiUrl(apiBase, `/kb/documents/content?${query}`));
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload?.detail || `读取失败（${response.status}）`);
@@ -54,37 +88,53 @@ export default function DocumentLibrary({ open, apiBase, workspaceId, documents 
     link.remove();
   }
 
-  const sources = [...new Set((documents || []).filter(Boolean))];
+  const filteredDocuments = useMemo(() => {
+    const keyword = normalizeFilename(searchQuery.trim());
+    if (!keyword) return documents;
+    return documents.filter((item) => normalizeFilename(item.filename).includes(keyword));
+  }, [documents, searchQuery]);
 
   return <>
     <Modal
       className="document-library-modal"
       open={open}
-      title={<span className="document-library-title"><FileText size={19} />文档资料 <small>{sources.length} 份</small></span>}
+      title={<span className="document-library-title"><FileText size={19} />文档资料 <small>{documents.length} 份</small></span>}
       centered
-      width={760}
+      width={780}
       footer={null}
       onCancel={onClose}
       destroyOnHidden
     >
       <div className="document-library-toolbar">
-        <p>当前工作区域中的全部知识库文档</p>
-        <Button type="primary" icon={<Upload size={16} />} onClick={onUpload} disabled={busy}>上传文档</Button>
+        <p>已上传的原始文档</p>
+        <div className="document-library-controls">
+          <Input
+            className="document-library-search"
+            allowClear
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            prefix={<Search size={16} />}
+            placeholder="按文件名筛选"
+            aria-label="按文件名筛选文档"
+          />
+          <Button type="primary" icon={<Upload size={16} />} onClick={onUpload} disabled={busy}>上传文档</Button>
+        </div>
       </div>
       {error && <div className="document-library-error" role="alert">{error}</div>}
       <div className="document-library-list">
-        {sources.length ? sources.map((source) => (
-          <div className="document-library-row" key={source}>
-            <span className="document-library-file-icon"><FileText size={18} /></span>
-            <span className="document-library-name" title={source}>{documentName(source)}</span>
-            <div className="document-library-actions">
-              <Button type="text" icon={<Eye size={16} />} loading={loadingSource === source} onClick={() => void viewDocument(source)}>查看</Button>
-              <Button type="text" icon={<Download size={16} />} onClick={() => downloadDocument(source)}>下载</Button>
+        {loadingDocuments ? <div className="document-library-loading"><Spin /></div>
+          : filteredDocuments.length ? filteredDocuments.map((item) => (
+            <div className="document-library-row" key={item.source}>
+              <span className="document-library-file-icon"><FileText size={18} /></span>
+              <span className="document-library-name" title={item.filename}>{item.filename}</span>
+              <small className="document-library-size">{formatFileSize(item.size_bytes)}</small>
+              <div className="document-library-actions">
+                <Button type="text" icon={<Eye size={16} />} loading={loadingSource === item.source} onClick={() => void viewDocument(item)}>预览</Button>
+                <Button type="text" icon={<Download size={16} />} onClick={() => downloadDocument(item.source)}>下载</Button>
+              </div>
             </div>
-          </div>
-        )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="当前工作区域还没有文档" />}
+          )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={searchQuery.trim() ? "没有找到匹配文件名的文档" : "还没有已上传的文档"} />}
       </div>
-      <p className="document-library-note">旧文档若未保存原文件，下载时会导出知识库已解析的文本；新上传文档会保留原文件。</p>
     </Modal>
 
     <Modal
@@ -101,13 +151,11 @@ export default function DocumentLibrary({ open, apiBase, workspaceId, documents 
       destroyOnHidden
     >
       {preview && <>
-        {!preview.original_available && <div className="document-library-note document-library-preview-note">服务器没有保存这份文档的原始文件，以下内容来自知识库已解析文本。</div>}
-        {preview.truncated && <div className="document-library-note document-library-preview-note">预览内容较长，当前显示前 15 万字；下载可获取完整解析文本。</div>}
+        {preview.truncated && <div className="document-library-truncated-note">文档较长，预览显示前 15 万字。</div>}
         <div className="document-preview-body">{preview.content
           ? <pre>{preview.content}</pre>
           : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="没有可预览的文本内容" />}</div>
       </>}
     </Modal>
-    {loadingSource && <span className="visually-hidden" aria-live="polite"><Spin size="small" />正在读取文档</span>}
   </>;
 }

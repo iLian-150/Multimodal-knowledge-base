@@ -32,6 +32,34 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .mobile-menu { display: none; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
 .conversation-stage { display: flex; flex: 1 1 0%; flex-direction: column; min-width: 0; min-height: 0; overflow-x: hidden; overflow-y: auto; scroll-behavior: smooth; }
+
+/* Preserve the scrollbar gutter; only its thumb changes when the conversation is actively scrolling. */
+.conversation-stage,
+.message-list .ant-bubble-list-scroll-box {
+  scrollbar-color: transparent transparent;
+}
+.conversation-stage.is-scrolling,
+.conversation-stage.is-scrolling .ant-bubble-list-scroll-box {
+  scrollbar-color: rgba(112, 117, 128, 0.72) transparent;
+}
+.conversation-stage::-webkit-scrollbar-track,
+.message-list .ant-bubble-list-scroll-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+.conversation-stage::-webkit-scrollbar-thumb,
+.message-list .ant-bubble-list-scroll-box::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 999px;
+  transition: background-color 150ms ease;
+}
+.conversation-stage.is-scrolling::-webkit-scrollbar-thumb,
+.conversation-stage.is-scrolling .ant-bubble-list-scroll-box::-webkit-scrollbar-thumb {
+  background-color: rgba(112, 117, 128, 0.72);
+}
+.conversation-stage::-webkit-scrollbar-button,
+.message-list .ant-bubble-list-scroll-box::-webkit-scrollbar-button {
+  display: none;
+}
 .welcome-view { display: grid; flex: 1; align-content: center; justify-items: center; width: min(100% - 40px, 800px); gap: 20px; margin: auto; padding: 48px 0; text-align: center; animation: fade-in .35s ease both; }
 .welcome-view .brand-symbol { width: 46px; height: 46px; margin-bottom: 12px; border-radius: 15px; }
 .message-list.ant-bubble-list { display: flex; flex: 1 1 auto; width: min(100% - 64px, 1040px); height: 100%; max-height: 100%; margin: 0 auto; padding: 0; overflow: hidden; }
