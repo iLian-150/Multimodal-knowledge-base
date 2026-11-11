@@ -14,7 +14,11 @@ const ConfidenceSlider = lazy(() => import("antd/es/slider"));
 const DeferredProgress = lazy(() => import("antd/es/progress"));
 const DeferredSpin = lazy(() => import("antd/es/spin"));
 
-const API_DEFAULT = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_DEFAULT = import.meta.env.VITE_API_BASE_URL || (
+  ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? "http://127.0.0.1:8000"
+    : `${window.location.protocol}//${window.location.hostname}:3000`
+);
 const STORAGE_KEY = "zhixu-rag-conversations-v1";
 const WORKSPACES_KEY = "zhixu-rag-workspaces-v1";
 const ACTIVE_WORKSPACE_KEY = "zhixu-rag-active-workspace-v1";
@@ -25,6 +29,7 @@ const DEFAULT_WORKSPACE = { id: DEFAULT_WORKSPACE_ID, name: "校园知识库" };
 const API_KEY = "zhixu-rag-api-base-v1";
 const RERANK_RULES_KEY = "zhixu-rag-rerank-rules-v1";
 const HALLUCINATION_THRESHOLD_KEY = "zhixu-rag-hallucination-threshold-v1";
+const HALLUCINATION_THRESHOLD_MIGRATION_KEY = "zhixu-rag-hallucination-threshold-default-v1";
 const ACCEPTED_FILES = ".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff";
 function makeId() {
   return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -83,8 +88,23 @@ function readRerankRules() {
 }
 
 function readHallucinationThreshold() {
-  const saved = Number(localStorage.getItem(HALLUCINATION_THRESHOLD_KEY));
+  let raw = localStorage.getItem(HALLUCINATION_THRESHOLD_KEY);
+  if (localStorage.getItem(HALLUCINATION_THRESHOLD_MIGRATION_KEY) !== "done") {
+    // The previous code converted a missing value to 0 and persisted it as the default.
+    if (raw === null || raw === "0") {
+      raw = "75";
+      localStorage.setItem(HALLUCINATION_THRESHOLD_KEY, raw);
+    }
+    localStorage.setItem(HALLUCINATION_THRESHOLD_MIGRATION_KEY, "done");
+  }
+  const saved = raw === null || raw === "" ? 75 : Number(raw);
   return Number.isFinite(saved) ? Math.max(0, Math.min(95, Math.round(saved / 5) * 5)) : 75;
+}
+
+function readApiBase() {
+  const saved = localStorage.getItem(API_KEY)?.trim();
+  const oldDefaults = ["http://127.0.0.1:8000", "http://localhost:8000"];
+  return !saved || (oldDefaults.includes(saved) && saved !== API_DEFAULT) ? API_DEFAULT : saved;
 }
 
 function parseRerankTerms(value) {
@@ -144,7 +164,7 @@ function documentDisplayName(source) {
 }
 
 function App() {
-  const [apiBase, setApiBase] = useState(() => localStorage.getItem(API_KEY) || API_DEFAULT);
+  const [apiBase, setApiBase] = useState(readApiBase);
   const [rerankRules, setRerankRules] = useState(readRerankRules);
   const [hallucinationThreshold, setHallucinationThreshold] = useState(readHallucinationThreshold);
   const [conversations, setConversations] = useState(readConversations);
