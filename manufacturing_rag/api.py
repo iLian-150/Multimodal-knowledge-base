@@ -249,7 +249,7 @@ class AnswerRequest(BaseModel):
 
     question: str = Field(..., min_length=1, description="User question to answer from indexed OCR/CLIP materials")
     session_id: Optional[str] = Field(None, max_length=128, description="Conversation id cached in Redis and persisted in MySQL")
-    conversation_context: str = Field("", max_length=4000, description="Recent turns from the current chat, used as a fallback context")
+    conversation_context: str = Field("", max_length=4000, description="Recent turns from the current chat")
     workspace_id: str = Field(DEFAULT_WORKSPACE_ID, min_length=1, max_length=128, description="Knowledge workspace to search")
     rerank_rules: RerankRuleRequest = Field(default_factory=RerankRuleRequest)
     hallucination_threshold: float = Field(0.75, ge=0.0, le=0.95, description="Minimum confidence required to accept a source-checked answer")
@@ -401,11 +401,11 @@ class KnowledgeBaseState:
         question: str,
         session_id: Optional[str] = None,
         rerank_rules: Optional[Dict[str, List[str]]] = None,
+        conversation_context: str = "",
         on_token: Optional[Callable[[str], None]] = None,
         hallucination_threshold: float = 0.75,
         on_status: Optional[Callable[[str], None]] = None,
         workspace_id: str = DEFAULT_WORKSPACE_ID,
-        conversation_context: str = "",
     ) -> RAGResponse:
         with self._lock:
             pipeline = self._workspace_pipeline_locked(workspace_id)
@@ -1556,9 +1556,9 @@ def create_app(initial_chunks: Optional[Iterable[DocumentChunk]] = None, config:
             request.question.strip(),
             request.session_id,
             request.rerank_rules.dict(),
+            conversation_context=request.conversation_context,
             hallucination_threshold=request.hallucination_threshold,
             workspace_id=request.workspace_id,
-            conversation_context=request.conversation_context,
         )
         return response.to_dict()
 
@@ -1583,11 +1583,11 @@ def create_app(initial_chunks: Optional[Iterable[DocumentChunk]] = None, config:
                     request.question.strip(),
                     request.session_id,
                     request.rerank_rules.dict(),
+            conversation_context=request.conversation_context,
                     on_token=enqueue_token,
                     hallucination_threshold=request.hallucination_threshold,
                     on_status=enqueue_status,
                     workspace_id=request.workspace_id,
-                    conversation_context=request.conversation_context,
                 )
             )
             try:

@@ -2,23 +2,23 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import Bubble from "@ant-design/x/es/bubble/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
 import Welcome from "@ant-design/x/es/welcome/index.js";
-import { DeleteOutlined, PaperClipOutlined, SettingOutlined, UploadOutlined, SendOutlined } from "@ant-design/icons";
-import { ChevronRight, LibraryBig, PanelLeft } from "lucide-react";
+import { ArrowUp, ChevronDown, FileText, LoaderCircle, PanelLeft, Paperclip, Upload } from "lucide-react";
 import Button from "antd/es/button";
 import Input from "antd/es/input";
 import Modal from "antd/es/modal";
 import Sidebar from "./components/Sidebar.jsx";
 import DocumentLibrary from "./components/DocumentLibrary.jsx";
+import BrandMark from "./components/BrandMark.jsx";
+import TaskProgress from "./components/TaskProgress.jsx";
+import useStoredState from "./hooks/useStoredState.js";
 
 const MarkdownRenderer = lazy(() => import("./MarkdownRenderer.jsx"));
-const ConfidenceSlider = lazy(() => import("antd/es/slider"));
-const DeferredProgress = lazy(() => import("antd/es/progress"));
-const DeferredSpin = lazy(() => import("antd/es/spin"));
+const SettingsDialog = lazy(() => import("./components/SettingsDialog.jsx"));
 
 const API_DEFAULT = import.meta.env.VITE_API_BASE_URL || (
   ["localhost", "127.0.0.1"].includes(window.location.hostname)
     ? "http://127.0.0.1:8000"
-    : `${window.location.protocol}//${window.location.hostname}:3000`
+    : window.location.protocol + "//" + window.location.hostname + ":3000"
 );
 const STORAGE_KEY = "zhixu-rag-conversations-v1";
 const WORKSPACES_KEY = "zhixu-rag-workspaces-v1";
@@ -77,7 +77,7 @@ function conversationContextForRequest(messages = []) {
       && message.text.trim(),
     )
     .slice(-8)
-    .map((message) => `${message.role === "user" ? "用户" : "助手"}：${message.text.trim()}`)
+    .map((message) => (message.role === "user" ? "用户：" : "助手：") + message.text.trim())
     .join("\n")
     .slice(-4000);
 }
@@ -180,16 +180,16 @@ function documentDisplayName(source) {
 }
 
 function App() {
-  const [apiBase, setApiBase] = useState(readApiBase);
-  const [rerankRules, setRerankRules] = useState(readRerankRules);
-  const [hallucinationThreshold, setHallucinationThreshold] = useState(readHallucinationThreshold);
-  const [conversations, setConversations] = useState(readConversations);
+  const [apiBase, setApiBase] = useStoredState(API_KEY, readApiBase, String);
+  const [rerankRules, setRerankRules] = useStoredState(RERANK_RULES_KEY, readRerankRules);
+  const [hallucinationThreshold, setHallucinationThreshold] = useStoredState(HALLUCINATION_THRESHOLD_KEY, readHallucinationThreshold, String);
+  const [conversations, setConversations] = useStoredState(STORAGE_KEY, readConversations);
   const [activeId, setActiveId] = useState(readActiveConversationId);
-  const [workspaces, setWorkspaces] = useState(readWorkspaces);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState(() => {
+  const [workspaces, setWorkspaces] = useStoredState(WORKSPACES_KEY, readWorkspaces);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useStoredState(ACTIVE_WORKSPACE_KEY, () => {
     const savedId = localStorage.getItem(ACTIVE_WORKSPACE_KEY);
     return readWorkspaces().some((workspace) => workspace.id === savedId) ? savedId : DEFAULT_WORKSPACE_ID;
-  });
+  }, String);
   const [workspaceName, setWorkspaceName] = useState("");
   const [workspaceCreateOpen, setWorkspaceCreateOpen] = useState(false);
   const [question, setQuestion] = useState("");
@@ -199,13 +199,10 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [workspaceDeleting, setWorkspaceDeleting] = useState(false);
   const [documentListVersion, setDocumentListVersion] = useState(0);
-  const [docs, setDocs] = useState([]);
-  const [docsLoading, setDocsLoading] = useState(false);
-  const [docsError, setDocsError] = useState("");
   const [isConversationScrolling, setIsConversationScrolling] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true");
+  const [sidebarCollapsed, setSidebarCollapsed] = useStoredState(SIDEBAR_COLLAPSED_KEY, () => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true", String);
   const [showSettings, setShowSettings] = useState(false);
   const [showDocuments, setShowDocuments] = useState(false);
   const [documentDelete, setDocumentDelete] = useState(null);
@@ -214,7 +211,6 @@ function App() {
   const textInput = useRef(null);
   const scrollArea = useRef(null);
   const summaryRequestRef = useRef(0);
-  const documentsRequestRef = useRef(0);
   const scrollIdleTimerRef = useRef(null);
   const closeMobileNav = useCallback(() => setMobileNav(false), []);
 
@@ -233,22 +229,8 @@ function App() {
     () => conversations.find((item) => item.id === activeId && item.workspaceId === activeWorkspaceId) || null,
     [conversations, activeId, activeWorkspaceId],
   );
-  const activeWorkspaceName = workspaces.find((item) => item.id === activeWorkspaceId)?.name || DEFAULT_WORKSPACE.name;
   const messages = activeConversation?.messages || [];
   const visibleMessages = messages.filter((message) => !message.fileProgress);
-  const hasPendingAnswer = visibleMessages.some((message) => message.role === "assistant" && message.pending);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
-  }, [conversations]);
-
-  useEffect(() => {
-    localStorage.setItem(WORKSPACES_KEY, JSON.stringify(workspaces));
-  }, [workspaces]);
-
-  useEffect(() => {
-    localStorage.setItem(ACTIVE_WORKSPACE_KEY, activeWorkspaceId);
-  }, [activeWorkspaceId]);
 
   useEffect(() => {
     try {
@@ -256,22 +238,6 @@ function App() {
       localStorage.setItem(ACTIVE_CONVERSATIONS_KEY, JSON.stringify({ ...selected, [activeWorkspaceId]: activeId }));
     } catch { /* Keep navigation usable if browser preferences are unavailable. */ }
   }, [activeId, activeWorkspaceId]);
-
-  useEffect(() => {
-    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(sidebarCollapsed));
-  }, [sidebarCollapsed]);
-
-  useEffect(() => {
-    localStorage.setItem(API_KEY, apiBase);
-  }, [apiBase]);
-
-  useEffect(() => {
-    localStorage.setItem(RERANK_RULES_KEY, JSON.stringify(rerankRules));
-  }, [rerankRules]);
-
-  useEffect(() => {
-    localStorage.setItem(HALLUCINATION_THRESHOLD_KEY, String(hallucinationThreshold));
-  }, [hallucinationThreshold]);
 
   const refreshStatus = useCallback(async () => {
     const api = apiBase.trim();
@@ -291,33 +257,6 @@ function App() {
     const timer = window.setInterval(refreshStatus, 30000);
     return () => window.clearInterval(timer);
   }, [refreshStatus]);
-
-  async function refreshDocuments() {
-    const requestId = ++documentsRequestRef.current;
-    const api = apiBase.trim();
-    if (!api) {
-      setDocs([]);
-      setDocsError("请先设置后端 API 地址");
-      setDocsLoading(false);
-      return;
-    }
-
-    setDocs([]);
-    setDocsLoading(true);
-    setDocsError("");
-    try {
-      const workspace = encodeURIComponent(activeWorkspaceId);
-      const payload = await fetch(joinApi(api, `/kb/documents?workspace_id=${workspace}`)).then(parseResponse);
-      const documents = Array.isArray(payload.documents) ? payload.documents : [];
-      if (requestId === documentsRequestRef.current) {
-        setDocs(documents.map((document) => (typeof document === "string" ? document : document?.source)).filter(Boolean));
-      }
-    } catch (error) {
-      if (requestId === documentsRequestRef.current) setDocsError(error.message || "读取资料列表失败，请稍后重试");
-    } finally {
-      if (requestId === documentsRequestRef.current) setDocsLoading(false);
-    }
-  }
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -474,7 +413,6 @@ function App() {
     setShowSettings(true);
     setMobileNav(false);
     refreshStatus();
-    void refreshDocuments();
   }
 
   async function deleteDocument(source) {
@@ -499,8 +437,6 @@ function App() {
       }
       if (job.status === "failed") throw new Error(job.error || "删除失败，请稍后重试");
       await refreshStatus();
-      await refreshDocuments();
-      setDocumentListVersion((version) => version + 1);
     } catch (error) {
       setDocumentDelete({ source, status: "failed", progress: 0, phase: "删除失败", error: error.message });
     }
@@ -539,7 +475,7 @@ function App() {
     ]);
     setQuestion("");
     setBusy(true);
-    setStatus({ kind: "working", text: "正在识别问题类型…" });
+    setStatus({ kind: "idle", text: "" });
     let cancelQueuedAnswerUpdate = () => {};
     try {
       const response = await fetch(joinApi(apiBase, "/answer/stream"), {
@@ -593,7 +529,6 @@ function App() {
           if (event === "status") {
             const message = payload.message || "正在处理，请稍候…";
             apply({ status: message });
-            setStatus({ kind: "working", text: message });
           }
           if (event === "token") {
             answer += payload.text || "";
@@ -614,7 +549,6 @@ function App() {
         ? { ...message, text: `暂时无法完成回答：${error.message}`, error: true, pending: false }
         : message,
       ));
-      setStatus({ kind: "error", text: error.message });
     } finally {
       setBusy(false);
     }
@@ -677,6 +611,7 @@ function App() {
       .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0)),
     [conversations, activeWorkspaceId],
   );
+
   return (
     <div className={`app-shell ${sidebarCollapsed && !mobileNav ? "sidebar-collapsed" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }} onDrop={(event) => { event.preventDefault(); setDragging(false); uploadFiles(event.dataTransfer.files); }}>
       <Sidebar
@@ -705,30 +640,21 @@ function App() {
       <main className="main-panel">
         <header className="topbar">
           <Button className="mobile-menu" type="text" aria-label="打开侧栏" icon={<PanelLeft size={20} strokeWidth={1.75} />} onClick={() => setMobileNav(true)} />
-          <div className="topbar-path" aria-label={`${activeWorkspaceName} / ${showDocuments ? "文档资料" : activeConversation?.title || "问答工作台"}`}>
-            <LibraryBig size={17} strokeWidth={1.8} aria-hidden="true" />
-            <span>{activeWorkspaceName}</span>
-            <ChevronRight size={15} strokeWidth={1.7} aria-hidden="true" />
-            <strong>{showDocuments ? "文档资料" : activeConversation?.title || "问答工作台"}</strong>
-          </div>
-          <Button type="text" className="topbar-action" icon={<UploadOutlined />} onClick={() => fileInput.current?.click()}>
-            <span>添加资料</span>
-          </Button>
         </header>
 
         <input ref={fileInput} type="file" className="visually-hidden" multiple accept={ACCEPTED_FILES} onChange={(event) => uploadFiles(event.target.files)} />
-        {dragging && <div className="drop-overlay"><div><UploadOutlined /><strong>松开即可添加资料</strong><small>PDF、Word、PPT、图片与文本</small></div></div>}
+        {dragging && <div className="drop-overlay"><div><Upload size={20} /><strong>松开即可添加资料</strong><small>PDF、Word、PPT、图片与文本</small></div></div>}
 
         <section className={`conversation-stage ${visibleMessages.length ? "has-messages" : ""} ${isConversationScrolling ? "is-scrolling" : ""}`} onScrollCapture={handleConversationScroll}>
           {visibleMessages.length === 0 ? (
             <div className="welcome-view">
               <Welcome
                 variant="borderless"
-                icon={<span className="brand-symbol"><i /><i /><i /></span>}
-                title="让每份资料，都能成为答案"
-                description="上传文档、扫描件和图片，直接提问。每个回答都能回到原始资料。"
+                icon={<BrandMark />}
+                title="今天想了解什么？"
+                description="上传资料，或直接提问。"
                 style={{ alignItems: "center", textAlign: "center" }}
-                styles={{ icon: { height: "auto", marginBottom: 12 }, title: { fontSize: "clamp(28px, 3vw, 38px)", fontWeight: 740, letterSpacing: "-0.045em", color: "var(--ink)" }, description: { maxWidth: 600, color: "var(--muted)", fontSize: 15, lineHeight: 1.8 } }}
+                styles={{ icon: { height: "auto", marginBottom: 12 }, title: { fontSize: "clamp(28px, 3vw, 38px)", fontWeight: 650, letterSpacing: "-0.035em" }, description: { maxWidth: 600, color: "#858793", fontSize: 16, lineHeight: 1.8 } }}
               />
             </div>
           ) : (
@@ -739,19 +665,13 @@ function App() {
                 items={visibleMessages.map(makeBubbleItem)}
                 autoScroll={false}
               />
-              {busy && !visibleMessages.some((message) => message.pending) && !uploadProgress && <div className="thinking"><span /><span /><span />正在思考</div>}
             </>
           )}
         </section>
 
         <div className="composer-zone">
-          {uploadProgress && (
-            <div className="composer-upload-progress" aria-live="polite">
-              <div className="composer-upload-filename" title={uploadProgress.filename}>{uploadProgress.filename}</div>
-              <UploadProgress progress={uploadProgress} />
-            </div>
-          )}
-          {status.text && !uploadProgress && !hasPendingAnswer && <div className={`inline-status ${status.kind}`}><span>{status.kind === "working" ? "◌" : status.kind === "error" ? "!" : "✓"}</span>{status.text}</div>}
+          {uploadProgress && <TaskProgress title={uploadProgress.filename} label={uploadProgress.phase} percent={uploadProgress.percent} indeterminate={uploadProgress.indeterminate} kind={uploadProgress.kind} error={uploadProgress.detail} />}
+          {status.text && !uploadProgress && <div className={`inline-status ${status.kind}`}><span>{status.kind === "working" ? "◌" : status.kind === "error" ? "!" : "✓"}</span>{status.text}</div>}
           <Sender
             ref={textInput}
             className="chat-sender"
@@ -773,116 +693,37 @@ function App() {
             submitType="enter"
             autoSize={{ minRows: 1, maxRows: 6 }}
             disabled={busy}
-            prefix={<Button type="text" className="attach-button" title="添加资料" aria-label="添加资料" onClick={() => fileInput.current?.click()} disabled={busy}><PaperClipOutlined /></Button>}
-            suffix={<Button className="send-button" type="primary" shape="circle" aria-label="发送问题" disabled={!question.trim() || busy} icon={busy ? <Suspense fallback={<SendOutlined />}><DeferredSpin size="small" /></Suspense> : <SendOutlined />} onClick={() => void submitQuestion(null, question)} />}
+            prefix={<Button type="text" className="attach-button" title="添加资料" aria-label="添加资料" onClick={() => fileInput.current?.click()} disabled={busy}><Paperclip size={18} /></Button>}
+            suffix={<Button className="send-button" type="primary" shape="circle" aria-label="发送问题" disabled={!question.trim() || busy} icon={busy ? <LoaderCircle size={18} className="spinning" /> : <ArrowUp size={18} />} onClick={() => void submitQuestion(null, question)} />}
           />
         </div>
       </main>
 
-      {showSettings && <Modal
-        className="library-settings-modal"
-        open
-        centered
-        width={820}
-        title={<div className="settings-modal-title"><span><SettingOutlined /></span><div><h2>服务设置</h2><p>管理知识库资料与服务连接</p></div></div>}
-        footer={null}
-        closable={!isDeletingDocument}
-        mask={{ closable: !isDeletingDocument }}
-        onCancel={() => { if (!isDeletingDocument) setShowSettings(false); }}
-      >
-            <div className="settings-modal-body">
-              <section className="settings-section">
-                <div className="settings-section-heading">
-                  <div><h3>知识库资料</h3><p>删除后会同步移除对应知识片段和向量索引。</p></div>
-                  <Button className="settings-add-document" onClick={() => { setShowSettings(false); fileInput.current?.click(); }} disabled={busy || isDeletingDocument}><UploadOutlined /> 添加资料</Button>
-                </div>
-                <div className="settings-stats">
-                  <div><strong>{docs.length}</strong><span>份资料</span></div>
-                  <div><strong>{summary?.chunk_count ?? 0}</strong><span>个知识片段</span></div>
-                </div>
-                {docsLoading ? <div className="managed-documents-empty" role="status">正在读取资料列表…</div>
-                  : docsError ? <div className="managed-documents-empty settings-documents-error" role="alert">{docsError}</div>
-                    : docs.length ? (
-                  <div className="managed-document-list">
-                    {docs.map((source) => (
-                      <div className="managed-document" key={source}>
-                        <span className="managed-document-icon">▤</span>
-                        <span className="managed-document-name" title={source}>{documentDisplayName(source)}</span>
-                        <Button type="text" danger className="managed-document-delete" onClick={() => deleteDocument(source)} disabled={busy || isDeletingDocument}>
-                          {isDeletingDocument && documentDelete.source === source ? "删除中…" : "删除"}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : <div className="managed-documents-empty">知识库中还没有资料</div>}
+      <DocumentLibrary
+        open={showDocuments}
+        apiBase={apiBase}
+        workspaceId={activeWorkspaceId}
+        reloadToken={documentListVersion}
+        busy={busy}
+        onUpload={() => fileInput.current?.click()}
+        onClose={() => setShowDocuments(false)}
+      />
 
-                {documentDelete && (
-                  <div className={`document-delete-progress ${documentDelete.status}`} role="status" aria-live="polite">
-                    <div className="document-delete-progress-label"><span>{documentDelete.phase}{documentDelete.source ? ` · ${documentDisplayName(documentDelete.source)}` : ""}</span><span>{Math.max(0, Math.min(100, Number(documentDelete.progress) || 0))}%</span></div>
-                    <Suspense fallback={<div className="library-progress-placeholder" role="progressbar" aria-label="正在更新进度" />}>
-                      <DeferredProgress percent={Math.max(0, Math.min(100, Number(documentDelete.progress) || 0))} showInfo={false} status={documentDelete.status === "failed" ? "exception" : documentDelete.status === "completed" ? "success" : "active"} />
-                    </Suspense>
-                    {documentDelete.error && <small>{documentDelete.error}</small>}
-                  </div>
-                )}
-              </section>
-
-              <section className="settings-section">
-                <div className="settings-section-heading"><div><h3>服务连接</h3><p>设置当前使用的后端 API 地址。</p></div></div>
-                <label className="settings-api-label" htmlFor="api-base">后端 API 地址</label>
-                <Input className="settings-api-input" id="api-base" value={apiBase} onChange={(event) => setApiBase(event.target.value)} onBlur={() => { refreshStatus(); void refreshDocuments(); }} spellCheck="false" />
-                <small className="settings-api-help">API 密钥保存在后端环境变量中。</small>
-              </section>
-
-              <section className="settings-section">
-                <div className="settings-section-heading"><div><h3>检索重排规则</h3><p>规则自动保存在当前浏览器，并应用于之后的新问题。</p></div></div>
-                <label className="settings-api-label" htmlFor="rerank-boost-terms">优先匹配关键词</label>
-                <Input.TextArea
-                  className="settings-rule-textarea"
-                  id="rerank-boost-terms"
-                  value={rerankRules.boostTerms}
-                  onChange={(event) => setRerankRules((current) => ({ ...current, boostTerms: event.target.value }))}
-                  placeholder="例如：奖学金金额、申请条件"
-                  rows={3}
-                />
-                <small className="settings-api-help">候选资料命中这些词时会提高排序。每行一个，也可用逗号分隔。</small>
-
-                <label className="settings-api-label settings-rule-secondary-label" htmlFor="rerank-exclude-terms">排除关键词</label>
-                <Input.TextArea
-                  className="settings-rule-textarea"
-                  id="rerank-exclude-terms"
-                  value={rerankRules.excludeTerms}
-                  onChange={(event) => setRerankRules((current) => ({ ...current, excludeTerms: event.target.value }))}
-                  placeholder="例如：目录、封面"
-                  rows={3}
-                />
-                <small className="settings-api-help">候选资料命中这些词时会从本次答案的依据中排除。最多设置 20 个关键词。</small>
-              </section>
-
-              <section className="settings-section">
-                <div className="settings-section-heading"><div><h3>答案幻觉校验</h3><p>设置答案通过来源核验所需的最低置信度。</p></div></div>
-                <label className="settings-api-label" htmlFor="hallucination-threshold">最低可信度</label>
-                <div className="threshold-control">
-                  <Suspense fallback={<div className="slider-loading" role="status">加载设置项…</div>}>
-                    <ConfidenceSlider
-                      className="threshold-range"
-                      id="hallucination-threshold"
-                      min={0}
-                      max={95}
-                      step={5}
-                      value={hallucinationThreshold}
-                      onChange={setHallucinationThreshold}
-                      aria-label="最低可信度"
-                      tooltip={{ formatter: (value) => `${value}%` }}
-                    />
-                  </Suspense>
-                  <strong className="threshold-value">{hallucinationThreshold}%</strong>
-                </div>
-                <div className="threshold-scale"><span>宽松</span><span>严格</span></div>
-                <small className="settings-api-help">阈值越低越宽松。设为 0% 时，只要检索到资料，就不会因校验置信度拦截回答；低阈值可能放过依据不足的内容，请核对参考资料。设置仅保存在当前浏览器，并应用于之后的新问题。</small>
-              </section>
-            </div>
-      </Modal>}
+      {showSettings && <Suspense fallback={null}><SettingsDialog
+        summary={summary}
+        documentDelete={documentDelete}
+        busy={busy}
+        onDeleteDocument={deleteDocument}
+        onAddDocuments={() => { setShowSettings(false); fileInput.current?.click(); }}
+        apiBase={apiBase}
+        onApiBaseChange={setApiBase}
+        onRefresh={refreshStatus}
+        rerankRules={rerankRules}
+        onRerankRulesChange={setRerankRules}
+        threshold={hallucinationThreshold}
+        onThresholdChange={setHallucinationThreshold}
+        onClose={() => setShowSettings(false)}
+      /></Suspense>}
 
       {workspaceCreateOpen && <Modal
         className="library-workspace-modal"
@@ -891,10 +732,10 @@ function App() {
         width={440}
         title="新建工作区域"
         onCancel={() => { setWorkspaceCreateOpen(false); setWorkspaceName(""); }}
-        footer={[
-          <Button key="cancel" onClick={() => { setWorkspaceCreateOpen(false); setWorkspaceName(""); }}>取消</Button>,
-          <Button key="create" type="primary" disabled={!workspaceName.trim()} onClick={createWorkspace}>创建</Button>,
-        ]}
+        okText="创建"
+        cancelText="取消"
+        onOk={createWorkspace}
+        okButtonProps={{ disabled: !workspaceName.trim() }}
       >
         <Input
           autoFocus
@@ -907,16 +748,6 @@ function App() {
         />
       </Modal>}
 
-      <DocumentLibrary
-        open={showDocuments}
-        apiBase={apiBase}
-        workspaceId={activeWorkspaceId}
-        reloadToken={documentListVersion}
-        busy={busy}
-        onUpload={() => fileInput.current?.click()}
-        onClose={() => setShowDocuments(false)}
-      />
-
       {deleteConfirmation && <Modal
         className="library-confirm-modal"
         open
@@ -924,10 +755,10 @@ function App() {
         width={460}
         title={deleteConfirmation?.type === "workspace" ? "删除这个工作区？" : deleteConfirmation?.type === "document" ? "删除这份资料？" : "删除这段对话？"}
         onCancel={() => setDeleteConfirmation(null)}
-        footer={[
-          <Button key="cancel" onClick={() => setDeleteConfirmation(null)}>取消</Button>,
-          <Button key="delete" danger type="primary" onClick={confirmDeletion}>确认删除</Button>,
-        ]}
+        okText="确认删除"
+        cancelText="取消"
+        onOk={confirmDeletion}
+        okButtonProps={{ danger: true }}
       >
         {deleteConfirmation && <p className="confirm-dialog-description">
           {deleteConfirmation.type === "workspace"
@@ -950,19 +781,13 @@ function MessageContent({ message }) {
       {!isUser && message.text
         ? <Suspense fallback={<span className="markdown-loading">正在渲染回答…</span>}><MarkdownRenderer>{message.text}</MarkdownRenderer></Suspense>
         : isUser ? message.text : null}
-      {!isUser && message.pending && !message.text && (
-        <div className="assistant-thinking" role="status" aria-live="polite">
-          <i aria-hidden="true" />
-          <span>{message.status || "正在处理，请稍候…"}</span>
-        </div>
-      )}
       {message.pending && message.text && <span className="cursor-blink" />}
       {!isUser && message.hallucination_check?.passed && (message.hallucination_check.issues || []).some((issue) => issue.startsWith("当前阈值已放宽来源校验")) && (
         <div className="answer-review-note" role="note">当前校验设置较宽松，建议核对参考资料。</div>
       )}
       {sources.length > 0 && (
         <details className="sources-block">
-          <summary className="sources-heading"><span>▤</span> 参考资料 <small>{sources.length}</small><span className="sources-chevron">⌄</span></summary>
+          <summary className="sources-heading"><FileText size={14} /> 参考资料 <small>{sources.length}</small><ChevronDown size={13} className="sources-chevron" /></summary>
           <div className="source-list">{sources.map((source, index) => <div className="source-card" key={`${source.document_id || sourceTitle(source)}-${index}`}><span className="source-number">{index + 1}</span><span className="source-name">{sourceTitle(source)}</span>{source.page && <span className="source-page">第 {source.page} 页</span>}</div>)}</div>
         </details>
       )}
@@ -980,25 +805,11 @@ function makeBubbleItem(message) {
     variant: "filled",
     shape: isUser ? "corner" : "default",
     styles: { content: { background: isUser ? "#f4f4f7" : "transparent", paddingInline: isUser ? 18 : 0, paddingBlock: isUser ? 13 : 0, fontSize: 16, lineHeight: 1.85 } },
-    avatar: <div className={`message-avatar ${isUser ? "user-avatar" : "assistant-avatar"}`}>{isUser ? "我" : <span className="brand-symbol"><i /><i /><i /></span>}</div>,
-    header: !isUser && <div className="message-author">库解</div>,
+    avatar: isUser ? undefined : <div className="message-avatar"><BrandMark /></div>,
+    header: !isUser && message.pending && <span className="pending-label"><LoaderCircle size={13} className="spinning" />{message.status || "正在处理，请稍候…"}</span>,
     content: <MessageContent message={message} />,
-    loading: false,
     streaming: Boolean(message.pending),
   };
-}
-
-function UploadProgress({ progress }) {
-  const percent = Math.max(0, Math.min(100, Number(progress.percent) || 0));
-  return (
-    <div className={`upload-progress ${progress.kind || "working"}`} role="status">
-      <div className="upload-progress-label"><span>{progress.phase}</span><span>{progress.indeterminate ? "处理中" : `${percent}%`}</span></div>
-      <Suspense fallback={<div className="library-progress-placeholder" role="progressbar" aria-label="正在更新进度" />}>
-        <DeferredProgress className={progress.indeterminate ? "library-progress-indeterminate" : ""} percent={progress.indeterminate ? 34 : percent} showInfo={false} status={progress.kind === "error" ? "exception" : progress.kind === "success" ? "success" : "active"} />
-      </Suspense>
-      {progress.detail && <div className="upload-progress-detail">{progress.detail}</div>}
-    </div>
-  );
 }
 
 function bytesToBase64(buffer) {

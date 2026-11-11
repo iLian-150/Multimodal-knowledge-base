@@ -620,4 +620,3 @@ def contextualize_question(question: str, conversation_context: str) -> str:
     if not needs_context:
         return question
     return f"会话上下文：{conversation_context}\n当前问题：{question}"
-

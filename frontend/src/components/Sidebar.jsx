@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Conversations from "@ant-design/x/es/conversations/index.js";
 import Button from "antd/es/button";
-import ConfigProvider from "antd/es/config-provider";
 import Drawer from "antd/es/drawer";
 import Dropdown from "antd/es/dropdown";
 import Empty from "antd/es/empty";
@@ -12,18 +11,6 @@ import { ChevronsUpDown, LibraryBig, MessageSquare, MoreHorizontal, FolderOpen, 
 import styles from "./Sidebar.module.css";
 
 const iconProps = { size: 18, strokeWidth: 1.75, "aria-hidden": true };
-const sidebarTheme = {
-  token: {
-    colorPrimary: "#3b63c7",
-    colorText: "#292c33",
-    colorTextDescription: "#888c95",
-    colorBgTextHover: "#eceef2",
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif',
-    fontSize: 14,
-    borderRadius: 9,
-  },
-  components: { Button: { defaultShadow: "none", controlHeight: 40 }, Modal: { titleFontSize: 18 } },
-};
 
 const normalize = (value) => String(value || "").normalize("NFKC").toLocaleLowerCase();
 
@@ -149,7 +136,7 @@ export default function Sidebar({ conversations, activeId, busy, collapsed, onTo
             { key: "delete", label: "删除对话", icon: <Trash2 size={15} />, danger: true, disabled: busy, onClick: () => onDeleteConversation(conversation.key) },
           ],
         })}
-      /> : <div className={styles.emptyHistory}><MessageSquare size={21} strokeWidth={1.5} aria-hidden /><span>还没有历史对话</span><small>发送第一条消息后会保存在这里</small></div>}
+      /> : <div className={styles.emptyHistory}><span>还没有历史对话</span></div>}
     </nav>}
 
     <div className={styles.footer}>
@@ -186,16 +173,16 @@ export default function Sidebar({ conversations, activeId, busy, collapsed, onTo
         ],
         onClick: ({ key }) => { if (key === "create") onCreateWorkspace(); else if (key !== "heading") onSelectWorkspace(key); },
       }}>
-        <Button type="text" className={styles.workspace} disabled={busy} aria-label={`切换工作区域，当前：${workspace.name}`} title={rail ? workspace.name : undefined}>
+        <Button type="text" className={`${styles.action} ${styles.workspace}`} disabled={busy} aria-label={`切换工作区域，当前：${workspace.name}`} title={rail ? workspace.name : undefined}>
           <span className={styles.workspaceIcon}><LibraryBig {...iconProps} /></span>
-          {!rail && <span className={styles.workspaceCopy}><strong>{workspace.name}</strong><small>工作区域</small></span>}
+          {!rail && <span className={styles.workspaceCopy} title="工作区域">{workspace.name}</span>}
           {!rail && <ChevronsUpDown size={15} strokeWidth={1.6} className={styles.workspaceChevron} aria-hidden />}
         </Button>
       </Dropdown>
     </div>
   </aside>;
 
-  return <ConfigProvider theme={sidebarTheme}>
+  return <>
     {mobile ? <Drawer open={mobileOpen} onClose={onCloseMobile} placement="left" size={280} closable={false} styles={{ body: { padding: 0 } }} aria-label="导航菜单">{navigation}</Drawer> : navigation}
 
     <Modal open={searchOpen} onCancel={() => setSearchOpen(false)} title="搜索对话" footer={null} centered width={600} destroyOnHidden afterOpenChange={(open) => { if (open) searchInput.current?.focus(); }}>
@@ -214,5 +201,5 @@ export default function Sidebar({ conversations, activeId, busy, collapsed, onTo
     <Modal open={Boolean(renaming)} title="重命名对话" centered width={420} onCancel={() => setRenaming(null)} onOk={finishRename} okText="保存" cancelText="取消" okButtonProps={{ disabled: !renameValue.trim() || busy }} destroyOnHidden>
       <Input value={renameValue} onChange={(event) => setRenameValue(event.target.value)} onPressEnter={finishRename} maxLength={60} aria-label="对话名称" placeholder="输入对话名称" />
     </Modal>
-  </ConfigProvider>;
+  </>;
 }

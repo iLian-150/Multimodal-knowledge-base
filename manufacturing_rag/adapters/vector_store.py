@@ -466,5 +466,3 @@ def vector_index_text(chunk: DocumentChunk) -> str:
         str(value) for key, value in (chunk.metadata or {}).items() if key not in {"parent_text", "line_confidences"}
     )
     return " ".join(part for part in (chunk.text, chunk.source, metadata) if part)
-
-

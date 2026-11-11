@@ -329,4 +329,3 @@ def utc_now() -> str:
 
 def bounded_error(value: str) -> str:
     return str(value or "")[:300]
-
