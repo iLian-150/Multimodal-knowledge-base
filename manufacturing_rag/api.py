@@ -93,7 +93,7 @@ def save_stored_document(workspace_id: str, source: str, filename: str, content:
         temporary_path.write_bytes(content)
         temporary_path.replace(path)
         temporary_metadata_path.write_text(
-            json.dumps({"filename": safe_document_filename(filename)}, ensure_ascii=False),
+            json.dumps({"source": source, "filename": safe_document_filename(filename)}, ensure_ascii=False),
             encoding="utf-8",
         )
         temporary_metadata_path.replace(metadata_path)
@@ -474,29 +474,30 @@ class KnowledgeBaseState:
             ]
 
     def list_original_documents(self, workspace_id: str = DEFAULT_WORKSPACE_ID) -> Dict[str, Any]:
-        with self._lock:
-            chunk_counts: Dict[str, int] = {}
-            for chunk in self._chunks:
-                if self._chunk_workspace_id(chunk) == workspace_id and chunk.source:
-                    chunk_counts[chunk.source] = chunk_counts.get(chunk.source, 0) + 1
-
-            documents = []
-            for source, chunk_count in chunk_counts.items():
+        workspace_key = hashlib.sha256(workspace_id.encode("utf-8")).hexdigest()[:24]
+        workspace_dir = DOCUMENT_FILES_DIR / workspace_key
+        documents = []
+        if not workspace_dir.is_dir():
+            return {"documents": documents, "count": 0, "workspace_id": workspace_id}
+        for metadata_path in workspace_dir.glob("*.json"):
+            try:
+                metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+                source = str(metadata.get("source") or "")
+                filename = safe_document_filename(str(metadata.get("filename") or source))
+                if not source or metadata_path != stored_document_metadata_path(workspace_id, source):
+                    continue
                 path = stored_document_path(workspace_id, source)
                 if not path.is_file():
                     continue
-                try:
-                    size_bytes = path.stat().st_size
-                except OSError:
-                    continue
                 documents.append({
                     "source": source,
-                    "filename": stored_document_filename(workspace_id, source),
-                    "size_bytes": size_bytes,
-                    "chunk_count": chunk_count,
+                    "filename": filename,
+                    "size_bytes": path.stat().st_size,
                 })
-            documents.sort(key=lambda item: item["filename"].casefold())
-            return {"documents": documents, "count": len(documents), "workspace_id": workspace_id}
+            except (OSError, ValueError, TypeError):
+                continue
+        documents.sort(key=lambda item: item["filename"].casefold())
+        return {"documents": documents, "count": len(documents), "workspace_id": workspace_id}
 
     def document_content(
         self,
