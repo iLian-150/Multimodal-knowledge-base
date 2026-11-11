@@ -221,6 +221,7 @@ function App() {
   const activeWorkspaceName = workspaces.find((item) => item.id === activeWorkspaceId)?.name || DEFAULT_WORKSPACE.name;
   const messages = activeConversation?.messages || [];
   const visibleMessages = messages.filter((message) => !message.fileProgress);
+  const hasPendingAnswer = visibleMessages.some((message) => message.role === "assistant" && message.pending);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
@@ -731,7 +732,7 @@ function App() {
               <UploadProgress progress={uploadProgress} />
             </div>
           )}
-          {status.text && !uploadProgress && <div className={`inline-status ${status.kind}`}><span>{status.kind === "working" ? "◌" : status.kind === "error" ? "!" : "✓"}</span>{status.text}</div>}
+          {status.text && !uploadProgress && !hasPendingAnswer && <div className={`inline-status ${status.kind}`}><span>{status.kind === "working" ? "◌" : status.kind === "error" ? "!" : "✓"}</span>{status.text}</div>}
           <Sender
             ref={textInput}
             className="chat-sender"
@@ -930,6 +931,12 @@ function MessageContent({ message }) {
       {!isUser && message.text
         ? <Suspense fallback={<span className="markdown-loading">正在渲染回答…</span>}><MarkdownRenderer>{message.text}</MarkdownRenderer></Suspense>
         : isUser ? message.text : null}
+      {!isUser && message.pending && !message.text && (
+        <div className="assistant-thinking" role="status" aria-live="polite">
+          <i aria-hidden="true" />
+          <span>{message.status || "正在处理，请稍候…"}</span>
+        </div>
+      )}
       {message.pending && message.text && <span className="cursor-blink" />}
       {!isUser && message.hallucination_check?.passed && (message.hallucination_check.issues || []).some((issue) => issue.startsWith("当前阈值已放宽来源校验")) && (
         <div className="answer-review-note" role="note">当前校验设置较宽松，建议核对参考资料。</div>
@@ -955,9 +962,9 @@ function makeBubbleItem(message) {
     shape: isUser ? "corner" : "default",
     styles: { content: { background: isUser ? "#f4f4f7" : "transparent", paddingInline: isUser ? 18 : 0, paddingBlock: isUser ? 13 : 0, fontSize: 16, lineHeight: 1.85 } },
     avatar: <div className={`message-avatar ${isUser ? "user-avatar" : "assistant-avatar"}`}>{isUser ? "我" : <span className="brand-symbol"><i /><i /><i /></span>}</div>,
-    header: !isUser && <div className="message-author">库解{message.pending && <span className="pending-label"><i />{message.status || "正在处理，请稍候…"}</span>}</div>,
+    header: !isUser && <div className="message-author">库解</div>,
     content: <MessageContent message={message} />,
-    loading: Boolean(message.pending && !message.text),
+    loading: false,
     streaming: Boolean(message.pending),
   };
 }
