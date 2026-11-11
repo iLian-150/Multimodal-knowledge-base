@@ -1,4 +1,4 @@
-# 教育多模态自适应 RAG
+# 多模态自适应 RAG
 
 面向教材、讲义、课件、扫描 PDF 与图片资料的多模态知识库。聊天入口使用 DeepSeek V4 Flash；Qwen3-VL Embedding 负责文本和图片的统一向量检索，Qwen3-VL Rerank 对召回结果排序；FastAPI 提供入库和流式问答接口，React 提供对话式工作台。
 
