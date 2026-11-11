@@ -2,13 +2,12 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import Bubble from "@ant-design/x/es/bubble/index.js";
 import Sender from "@ant-design/x/es/sender/index.js";
 import Welcome from "@ant-design/x/es/welcome/index.js";
-import { DeleteOutlined, PaperClipOutlined, UploadOutlined } from "@ant-design/icons";
+import { DeleteOutlined, PaperClipOutlined, SettingOutlined, UploadOutlined, SendOutlined } from "@ant-design/icons";
 import { PanelLeft } from "lucide-react";
 import Button from "antd/es/button";
 import Input from "antd/es/input";
 import Modal from "antd/es/modal";
 import Sidebar from "./components/Sidebar.jsx";
-import "./iconfont.css";
 
 const MarkdownRenderer = lazy(() => import("./MarkdownRenderer.jsx"));
 const ConfidenceSlider = lazy(() => import("antd/es/slider"));
@@ -27,10 +26,6 @@ const API_KEY = "zhixu-rag-api-base-v1";
 const RERANK_RULES_KEY = "zhixu-rag-rerank-rules-v1";
 const HALLUCINATION_THRESHOLD_KEY = "zhixu-rag-hallucination-threshold-v1";
 const ACCEPTED_FILES = ".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff";
-function Icon({ name, className = "" }) {
-  return <span className={`iconfont-icon iconfont-${name} ${className}`.trim()} aria-hidden="true" />;
-}
-
 function makeId() {
   return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
@@ -614,7 +609,7 @@ function App() {
             autoSize={{ minRows: 1, maxRows: 6 }}
             disabled={busy}
             prefix={<Button type="text" className="attach-button" title="添加资料" aria-label="添加资料" onClick={() => fileInput.current?.click()} disabled={busy}><PaperClipOutlined /></Button>}
-            suffix={<Button className="send-button" type="primary" shape="circle" aria-label="发送问题" disabled={!question.trim() || busy} icon={busy ? <Suspense fallback={<Icon name="send" />}><DeferredSpin size="small" /></Suspense> : <Icon name="send" />} onClick={() => void submitQuestion(null, question)} />}
+            suffix={<Button className="send-button" type="primary" shape="circle" aria-label="发送问题" disabled={!question.trim() || busy} icon={busy ? <Suspense fallback={<SendOutlined />}><DeferredSpin size="small" /></Suspense> : <SendOutlined />} onClick={() => void submitQuestion(null, question)} />}
           />
         </div>
       </main>
@@ -624,7 +619,7 @@ function App() {
         open
         centered
         width={820}
-        title={<div className="settings-modal-title"><span><Icon name="settings" /></span><div><h2>服务设置</h2><p>管理知识库资料与服务连接</p></div></div>}
+        title={<div className="settings-modal-title"><span><SettingOutlined /></span><div><h2>服务设置</h2><p>管理知识库资料与服务连接</p></div></div>}
         footer={null}
         closable={!isDeletingDocument}
         mask={{ closable: !isDeletingDocument }}
