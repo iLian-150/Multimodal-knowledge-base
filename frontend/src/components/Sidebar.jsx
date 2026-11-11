@@ -25,15 +25,6 @@ const sidebarTheme = {
   components: { Button: { defaultShadow: "none", controlHeight: 40 }, Modal: { titleFontSize: 18 } },
 };
 
-function period(timestamp) {
-  const date = new Date(Number(timestamp));
-  if (Number.isNaN(date.getTime())) return "更早";
-  const today = new Date();
-  const midnight = (value) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
-  const days = Math.round((midnight(today) - midnight(date)) / 86400000);
-  return days <= 0 ? "今天" : days === 1 ? "昨天" : days <= 7 ? "近 7 天" : "更早";
-}
-
 const normalize = (value) => String(value || "").normalize("NFKC").toLocaleLowerCase();
 
 export default function Sidebar({ conversations, activeId, busy, collapsed, onToggleCollapsed, mobileOpen, onCloseMobile, onNewChat, onSelectConversation, onRenameConversation, onDeleteConversation, workspaces, activeWorkspaceId, onSelectWorkspace, onCreateWorkspace, onOpenSettings }) {
@@ -78,7 +69,6 @@ export default function Sidebar({ conversations, activeId, busy, collapsed, onTo
   const items = useMemo(() => conversations.map((conversation) => ({
     key: conversation.id,
     title: conversation.title || "新对话",
-    group: period(conversation.updatedAt),
     label: <Button
       type="text"
       className={styles.conversationTitle}
@@ -148,7 +138,6 @@ export default function Sidebar({ conversations, activeId, busy, collapsed, onTo
         className={styles.conversations}
         activeKey={activeId || undefined}
         items={items}
-        groupable
         onActiveChange={onSelectConversation}
         menu={(conversation) => ({
           trigger: <Button className={styles.menuTrigger} type="text" size="small" aria-label={`管理对话：${conversation.title}`} icon={<MoreHorizontal size={17} strokeWidth={1.8} aria-hidden />} />,

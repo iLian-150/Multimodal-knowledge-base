@@ -22,8 +22,7 @@
 .newChat:global(.ant-btn):hover:not(:disabled) { background: #dfe7f9; color: #254da9; }
 .history { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #d9dce2 transparent; }
 .conversations:global(.ant-conversations) { gap: 2px; padding: 0; overflow: visible; }
-.conversations :global(.ant-conversations-group-title) { height: 32px; min-height: 32px; padding: 0 12px; color: #999da5; font-size: 12px; }
-.conversations :global(.ant-conversations-list) { gap: 2px; margin-bottom: 17px; }
+.conversations :global(.ant-conversations-list) { gap: 2px; }
 .conversations :global(.ant-conversations-item) { height: 38px; min-height: 38px; gap: 2px; padding: 0 7px 0 0; border-radius: 8px; }
 .conversations :global(.ant-conversations-item-active) { background: #e8ecf4; }
 .conversations :global(.ant-conversations-label) { min-width: 0; }
