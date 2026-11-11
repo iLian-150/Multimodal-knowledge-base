@@ -7,6 +7,7 @@ import binascii
 import asyncio
 import hashlib
 import json
+import mimetypes
 import os
 import re
 import zlib
@@ -15,12 +16,13 @@ from pathlib import Path
 from queue import Empty, Queue
 from threading import RLock
 from typing import Any, AsyncIterator, Callable, Dict, Iterable, List, Optional
+from urllib.parse import quote
 from uuid import uuid4
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
@@ -50,6 +52,37 @@ FRONTEND_SOURCE_DIR = PROJECT_ROOT / "frontend"
 FRONTEND_DIST_DIR = FRONTEND_SOURCE_DIR / "dist"
 FRONTEND_DIR = FRONTEND_DIST_DIR
 MAX_PDF_UPLOAD_BYTES = 10 * 1024 * 1024
+DOCUMENT_FILES_DIR = PROJECT_ROOT / "tmp" / "document_files"
+
+
+def safe_document_filename(source: str) -> str:
+    filename = str(source or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    return filename or "document"
+
+
+def stored_document_path(workspace_id: str, source: str) -> Path:
+    workspace_key = hashlib.sha256(workspace_id.encode("utf-8")).hexdigest()[:24]
+    document_key = hashlib.sha256(f"{workspace_id}\\0{source}".encode("utf-8")).hexdigest()
+    return DOCUMENT_FILES_DIR / workspace_key / document_key
+
+
+def save_stored_document(workspace_id: str, source: str, content: bytes) -> None:
+    path = stored_document_path(workspace_id, source)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_name(f"{path.name}.{uuid4().hex}.tmp")
+    try:
+        temporary_path.write_bytes(content)
+        temporary_path.replace(path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+
+
+def remove_stored_document(workspace_id: str, source: str) -> None:
+    try:
+        stored_document_path(workspace_id, source).unlink(missing_ok=True)
+    except OSError:
+        # Knowledge-base deletion should still complete if an old file is already gone.
+        pass
 
 
 def workspace_chunk_id(workspace_id: str, chunk_id: str) -> str:
@@ -411,6 +444,33 @@ class KnowledgeBaseState:
                 if chunk.source == source and self._chunk_workspace_id(chunk) == workspace_id
             ]
 
+    def document_content(
+        self,
+        source: str,
+        workspace_id: str = DEFAULT_WORKSPACE_ID,
+        max_chars: int = 150_000,
+    ) -> Dict[str, Any]:
+        with self._lock:
+            chunks = [
+                chunk for chunk in self._chunks
+                if chunk.source == source and self._chunk_workspace_id(chunk) == workspace_id
+            ]
+            if not chunks:
+                raise HTTPException(status_code=404, detail=f"知识库中不存在资料：{source}")
+            content = "\n\n".join(chunk.text.strip() for chunk in chunks if chunk.text and chunk.text.strip())
+            safe_limit = max(0, min(int(max_chars), 500_000))
+            truncated = bool(safe_limit and len(content) > safe_limit)
+            if truncated:
+                content = content[:safe_limit]
+            return {
+                "source": source,
+                "filename": safe_document_filename(source),
+                "content": content,
+                "chunk_count": len(chunks),
+                "original_available": stored_document_path(workspace_id, source).is_file(),
+                "truncated": truncated,
+            }
+
     def delete_document(
         self,
         source: str,
@@ -434,6 +494,7 @@ class KnowledgeBaseState:
                     and self._chunk_workspace_id(chunk) == workspace_id
                 )
             ]
+            remove_stored_document(workspace_id, source)
             self._version += 1
             self._persist_runtime_chunks_locked()
             self._invalidate_workspace_pipelines_locked()
@@ -561,13 +622,16 @@ class KnowledgeBaseState:
         except Exception as exc:  # noqa: BLE001 - convert parser-specific failures to a stable API error.
             raise HTTPException(status_code=400, detail=f"多模态 ETL 失败：{exc}") from exc
         log_chunks_for_ingest(self._config, "multimodal_document_ingest", result.chunks, normalized_mode, filename=filename)
-        return self._apply_chunks_locked(
+        response = self._apply_chunks_locked(
             result.chunks,
             normalized_mode,
             validation=result.validation,
             parser_chain=result.parser_chain,
             workspace_id=workspace_id,
         )
+        document_source = next((chunk.source for chunk in result.chunks if chunk.source), filename)
+        save_stored_document(workspace_id, document_source, content)
+        return response
 
     def _apply_chunks_locked(
         self,
@@ -582,9 +646,16 @@ class KnowledgeBaseState:
         chunks = tag_chunks_for_workspace(chunks, workspace_id)
         with self._lock:
             if normalized_mode == "replace":
+                previous_sources = {
+                    chunk.source for chunk in self._chunks
+                    if self._chunk_workspace_id(chunk) == workspace_id and chunk.source
+                }
+                incoming_sources = {chunk.source for chunk in chunks if chunk.source}
                 self._chunks = [
                     chunk for chunk in self._chunks if self._chunk_workspace_id(chunk) != workspace_id
                 ] + chunks
+                for removed_source in previous_sources - incoming_sources:
+                    remove_stored_document(workspace_id, removed_source)
             else:
                 # Keep different documents searchable while treating a
                 # repeated upload of the same source as an update. This
@@ -1444,6 +1515,36 @@ def create_app(initial_chunks: Optional[Iterable[DocumentChunk]] = None, config:
     @app.get("/kb/summary", response_model=KnowledgeBaseSummary)
     def kb_summary(workspace_id: str = DEFAULT_WORKSPACE_ID) -> KnowledgeBaseSummary:
         return kb_state.summary(workspace_id)
+
+    @app.get("/kb/documents/content")
+    def get_document_content(
+        source: str,
+        workspace_id: str = DEFAULT_WORKSPACE_ID,
+        max_chars: int = 150_000,
+    ) -> Dict[str, Any]:
+        return kb_state.document_content(source, workspace_id, max_chars)
+
+    @app.get("/kb/documents/download")
+    def download_document(source: str, workspace_id: str = DEFAULT_WORKSPACE_ID) -> Response:
+        document = kb_state.document_content(source, workspace_id, max_chars=0)
+        original_path = stored_document_path(workspace_id, source)
+        filename = safe_document_filename(source)
+        if original_path.is_file():
+            return FileResponse(
+                original_path,
+                media_type=mimetypes.guess_type(filename)[0] or "application/octet-stream",
+                filename=filename,
+                headers={"X-Original-Document": "true"},
+            )
+        export_name = filename if filename.lower().endswith(".txt") else f"{filename}.txt"
+        return Response(
+            content=document["content"].encode("utf-8"),
+            media_type="text/plain; charset=utf-8",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{quote(export_name)}",
+                "X-Original-Document": "false",
+            },
+        )
 
     @app.post("/kb/documents/delete")
     def begin_document_delete(request: DocumentDeleteRequest, background_tasks: BackgroundTasks) -> Dict[str, Any]:

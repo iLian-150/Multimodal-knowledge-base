@@ -8,6 +8,7 @@ import Button from "antd/es/button";
 import Input from "antd/es/input";
 import Modal from "antd/es/modal";
 import Sidebar from "./components/Sidebar.jsx";
+import DocumentLibrary from "./components/DocumentLibrary.jsx";
 
 const MarkdownRenderer = lazy(() => import("./MarkdownRenderer.jsx"));
 const ConfidenceSlider = lazy(() => import("antd/es/slider"));
@@ -185,6 +186,7 @@ function App() {
   const [mobileNav, setMobileNav] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true");
   const [showSettings, setShowSettings] = useState(false);
+  const [showDocuments, setShowDocuments] = useState(false);
   const [documentDelete, setDocumentDelete] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const fileInput = useRef(null);
@@ -352,6 +354,12 @@ function App() {
     const workspace = { id: makeId(), name };
     setWorkspaces((items) => [...items, workspace]);
     selectWorkspace(workspace.id);
+  }
+
+  function openDocuments() {
+    setShowDocuments(true);
+    setMobileNav(false);
+    refreshStatus();
   }
 
   function openSettings() {
@@ -574,6 +582,7 @@ function App() {
         onSelectWorkspace={selectWorkspace}
         onCreateWorkspace={() => { setWorkspaceName(""); setWorkspaceCreateOpen(true); setMobileNav(false); }}
         onOpenSettings={openSettings}
+        onOpenDocuments={openDocuments}
       />
 
       <main className="main-panel">
@@ -769,6 +778,16 @@ function App() {
           aria-label="工作区域名称"
         />
       </Modal>}
+
+      <DocumentLibrary
+        open={showDocuments}
+        apiBase={apiBase}
+        workspaceId={activeWorkspaceId}
+        documents={docs}
+        busy={busy}
+        onUpload={() => fileInput.current?.click()}
+        onClose={() => setShowDocuments(false)}
+      />
 
       {deleteConfirmation && <Modal
         className="library-confirm-modal"

@@ -8,7 +8,7 @@ import Empty from "antd/es/empty";
 import Input from "antd/es/input";
 import Modal from "antd/es/modal";
 import Tooltip from "antd/es/tooltip";
-import { BookOpenText, ChevronsUpDown, LibraryBig, MessageSquare, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, Settings2, SquarePen, Trash2, X } from "lucide-react";
+import { BookOpenText, ChevronsUpDown, LibraryBig, MessageSquare, MoreHorizontal, FolderOpen, PanelLeftClose, PanelLeftOpen, Pencil, Plus, Search, Settings2, SquarePen, Trash2, X } from "lucide-react";
 import styles from "./Sidebar.module.css";
 
 const iconProps = { size: 18, strokeWidth: 1.75, "aria-hidden": true };
@@ -27,7 +27,7 @@ const sidebarTheme = {
 
 const normalize = (value) => String(value || "").normalize("NFKC").toLocaleLowerCase();
 
-export default function Sidebar({ conversations, activeId, busy, collapsed, onToggleCollapsed, mobileOpen, onCloseMobile, onNewChat, onSelectConversation, onRenameConversation, onDeleteConversation, workspaces, activeWorkspaceId, onSelectWorkspace, onCreateWorkspace, onOpenSettings }) {
+export default function Sidebar({ conversations, activeId, busy, collapsed, onToggleCollapsed, mobileOpen, onCloseMobile, onNewChat, onSelectConversation, onRenameConversation, onDeleteConversation, workspaces, activeWorkspaceId, onSelectWorkspace, onCreateWorkspace, onOpenSettings, onOpenDocuments }) {
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 700px)").matches);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -127,6 +127,9 @@ export default function Sidebar({ conversations, activeId, busy, collapsed, onTo
     <div className={styles.actions}>
       <Tooltip title={rail ? "新建对话" : null} placement="right">
         <Button className={styles.newChat} type="text" onClick={onNewChat} disabled={busy} aria-label="新建对话" icon={<SquarePen {...iconProps} />}>{!rail && "新建对话"}</Button>
+      </Tooltip>
+      <Tooltip title={rail ? "文档资料" : null} placement="right">
+        <Button className={styles.action} type="text" onClick={onOpenDocuments} aria-label="文档资料" icon={<FolderOpen {...iconProps} />}>{!rail && "文档资料"}</Button>
       </Tooltip>
       <Tooltip title={rail ? "搜索对话" : null} placement="right">
         <Button className={styles.action} type="text" onClick={openSearch} aria-label="搜索对话" icon={<Search {...iconProps} />}>{!rail && "搜索对话"}</Button>
