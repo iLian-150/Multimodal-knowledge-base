@@ -212,6 +212,3 @@ class RAGResponse:
             "notices": list(self.notices),
             "cache_hit": self.cache_hit,
         }
-
-
-\n

@@ -1665,5 +1665,3 @@ def parse_cors_origins() -> List[str]:
 
 
 app = create_app()
-
-\n
